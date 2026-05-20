@@ -1,0 +1,45 @@
+:root {
+  --px-bg-950: #06061a;
+  --px-bg-900: #0b0b2e;
+  --px-bg-850: #10103a;
+  --px-bg-800: #171044;
+
+  --px-panel-900: #151234;
+  --px-panel-800: #1e174d;
+  --px-panel-700: #2b2166;
+  --px-panel-600: #3b2a7a;
+
+  --px-line-black: #03030d;
+  --px-line-dark: #0f1024;
+  --px-line-mid: #5148a6;
+  --px-line-light: #9b7cff;
+
+  --px-text-main: #fff7e8;
+  --px-text-sub: #c9c1f2;
+  --px-text-muted: #8f87bd;
+  --px-text-dark: #181225;
+
+  --px-purple: #8b5cf6;
+  --px-purple-light: #b794ff;
+  --px-blue: #315bea;
+  --px-cyan: #52d6ff;
+  --px-mint: #4ee39a;
+  --px-gold: #ffd166;
+  --px-orange: #ff9f1c;
+  --px-coral: #ff5c7a;
+  --px-red: #ff3b5c;
+
+  --stat-mental: #ff5c9a;
+  --stat-grade: #ffd166;
+  --stat-stamina: #ff6b6b;
+  --stat-money: #f6c445;
+  --stat-social: #52d6ff;
+  --stat-aggro: #ff3b5c;
+
+  --effect-good: #4ee39a;
+  --effect-bad: #ff5c7a;
+  --effect-neutral: #b794ff;
+
+  --font-pixel: "NeoDunggeunmo", "DungGeunMo", "Galmuri11", "Press Start 2P", monospace;
+  --font-body: "Galmuri11", "NeoDunggeunmo", "Noto Sans KR", system-ui, sans-serif;
+}

@@ -1,0 +1,54 @@
+{
+  "messageAvatar": {
+    "professor": "svg/avatar_professor.svg",
+    "lms": "svg/avatar_lms.svg",
+    "teammate": "svg/avatar_teammate.svg",
+    "friend": "svg/avatar_friend.svg",
+    "player": "svg/avatar_player.svg",
+    "system": "svg/avatar_system.svg"
+  },
+  "statIcon": {
+    "grade": "svg/stat_grade.svg",
+    "mental": "svg/stat_mental.svg",
+    "stamina": "svg/stat_stamina.svg",
+    "money": "svg/stat_money.svg",
+    "social": "svg/stat_social.svg",
+    "professorAggro": "svg/stat_professorAggro.svg"
+  },
+  "weekBanner": {
+    "week1_start": "svg/week_week1_start.svg",
+    "week2_openingParty": "svg/week_week2_openingParty.svg",
+    "week3_mt": "svg/week_week3_mt.svg",
+    "week4_teamProject": "svg/week_week4_teamProject.svg",
+    "week7_midterm": "svg/week_week7_midterm.svg",
+    "week9_sportsDay": "svg/week_week9_sportsDay.svg",
+    "week14_final": "svg/week_week14_final.svg",
+    "week16_gradeCheck": "svg/week_week16_gradeCheck.svg"
+  },
+  "eventIcon": {
+    "soloMeal": "svg/event_soloMeal.svg",
+    "lateWakeup": "svg/event_lateWakeup.svg",
+    "selfHoliday": "svg/event_selfHoliday.svg",
+    "teamProject": "svg/event_teamProject.svg",
+    "assignment": "svg/event_assignment.svg",
+    "drinking": "svg/event_drinking.svg",
+    "lms": "svg/event_lms.svg",
+    "commute": "svg/event_commute.svg",
+    "cafeteria": "svg/event_cafeteria.svg",
+    "caffeine": "svg/event_caffeine.svg"
+  },
+  "titleBadge": {
+    "normal": "svg/badge_normal.svg",
+    "rare": "svg/badge_rare.svg",
+    "danger": "svg/badge_danger.svg",
+    "academic": "svg/badge_academic.svg",
+    "survival": "svg/badge_survival.svg"
+  },
+  "finalResultCardBackground": {
+    "light": "svg/finalResultCardBackground_light.svg",
+    "dark": "svg/finalResultCardBackground_dark.svg"
+  },
+  "logo": {
+    "title": "svg/title_logo.svg"
+  }
+}

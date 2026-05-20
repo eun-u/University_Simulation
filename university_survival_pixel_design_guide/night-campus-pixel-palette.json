@@ -1,0 +1,38 @@
+{
+  "name": "Night Campus Pixel",
+  "background": {
+    "bg950": "#06061a",
+    "bg900": "#0b0b2e",
+    "bg850": "#10103a",
+    "bg800": "#171044"
+  },
+  "panels": {
+    "panel900": "#151234",
+    "panel800": "#1e174d",
+    "panel700": "#2b2166",
+    "panel600": "#3b2a7a"
+  },
+  "borders": {
+    "black": "#03030d",
+    "dark": "#0f1024",
+    "mid": "#5148a6",
+    "light": "#9b7cff"
+  },
+  "text": {
+    "main": "#fff7e8",
+    "sub": "#c9c1f2",
+    "muted": "#8f87bd",
+    "dark": "#181225"
+  },
+  "accents": {
+    "purple": "#8b5cf6",
+    "purpleLight": "#b794ff",
+    "blue": "#315bea",
+    "cyan": "#52d6ff",
+    "mint": "#4ee39a",
+    "gold": "#ffd166",
+    "orange": "#ff9f1c",
+    "coral": "#ff5c7a",
+    "red": "#ff3b5c"
+  }
+}
