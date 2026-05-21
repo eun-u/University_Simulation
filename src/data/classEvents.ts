@@ -445,7 +445,6 @@ export const classEvents: GameEvent[] = [
         effects: [
           { target: "money", value: -4500 },
           { target: "stamina", value: 10 },
-          { target: "caffeine", value: 10 },
           { target: "grade", value: 2 },
         ],
       },

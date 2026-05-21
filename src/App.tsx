@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
 import {
   addDerivedTitles,
   applyEffects,
-  applyFinalExamSideEffects,
   calculateFinalGrades,
   calculateFinalScore,
   calculateMidtermScore,
@@ -35,7 +35,7 @@ import {
   PixelWeekSummary,
 } from "./components/pixel";
 
-const SAVE_KEY = "uni-rpg-save-v3";
+const SAVE_KEY = "uni-rpg-save-v5";
 const AUDIO_SETTINGS_KEY = "uni-rpg-audio-settings-v1";
 const TOTAL_RUN_EVENTS = 18;
 const CHECKPOINT_WEEKS = [4, 8, 12, 15];
@@ -148,7 +148,7 @@ export default function App() {
     backgroundAudio.current.volume = audioSettings.bgmVolume;
     if (audioSettings.bgmVolume <= 0) {
       backgroundAudio.current.pause();
-    } else if (backgroundAudio.current.paused) {
+    } else if (!document.hidden && backgroundAudio.current.paused) {
       void backgroundAudio.current.play().catch(() => {});
     }
 
@@ -156,6 +156,44 @@ export default function App() {
       if (backgroundAudio.current) {
         backgroundAudio.current.pause();
       }
+    };
+  }, [audioSettings.bgmVolume]);
+
+  useEffect(() => {
+    const pauseBgm = () => {
+      backgroundAudio.current?.pause();
+    };
+    const resumeBgm = () => {
+      if (document.hidden || audioSettings.bgmVolume <= 0) return;
+      if (!backgroundAudio.current || !backgroundAudio.current.paused) return;
+      void backgroundAudio.current.play().catch(() => {});
+    };
+    const handleVisibility = () => {
+      if (document.hidden) pauseBgm();
+      else resumeBgm();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", pauseBgm);
+    window.addEventListener("blur", pauseBgm);
+    window.addEventListener("focus", resumeBgm);
+
+    let removeNativeListener: (() => void) | undefined;
+    void CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) resumeBgm();
+      else pauseBgm();
+    }).then((listener) => {
+      removeNativeListener = () => {
+        void listener.remove();
+      };
+    });
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", pauseBgm);
+      window.removeEventListener("blur", pauseBgm);
+      window.removeEventListener("focus", resumeBgm);
+      removeNativeListener?.();
     };
   }, [audioSettings.bgmVolume]);
 
@@ -262,7 +300,6 @@ export default function App() {
     if (next.currentEvent?.week === 14 && next.currentEvent.type === "exam") {
       const finalScore = calculateFinalScore(next, choiceBonus);
       next.hidden.finalScore = finalScore;
-      next = applyFinalExamSideEffects(next);
       picked.effects = [...picked.effects, { target: "finalScore", value: finalScore }];
       picked.resultText += `\n\n기말고사 점수: ${finalScore}점`;
     }
@@ -352,6 +389,9 @@ export default function App() {
         {loading ? <PixelLoadingOverlay type={loading} /> : null}
         <section className="start-hero">
           <div className="start-panel pixel-panel">
+            <button className="start-settings-button" type="button" onClick={() => setMenu("settings")} aria-label="설정 열기">
+              ⚙
+            </button>
             <img className="start-logo pixel-art" src={pixelAssetMap.logo.title} alt="한 학기만 버텨라" />
             <h1 className="pixel-title">대학생 생존 RPG</h1>
             <p className="start-subtitle">개강부터 성적 확인까지, 학점과 멘탈을 들고 16주를 버텨라.</p>
@@ -372,6 +412,17 @@ export default function App() {
             <p className="small-note">저장은 자동으로 진행됩니다. 선택지는 언제나 대가가 있습니다.</p>
           </div>
         </section>
+        {menu === "settings" ? (
+          <PixelMenuOverlay title="SETTINGS" onClose={() => setMenu(null)}>
+            <PixelSettingsMenu
+              bgmVolume={audioSettings.bgmVolume}
+              sfxVolume={audioSettings.sfxVolume}
+              onBgmVolumeChange={(value) => updateAudioSettings({ bgmVolume: value })}
+              onSfxVolumeChange={(value) => updateAudioSettings({ sfxVolume: value })}
+              onRestart={restart}
+            />
+          </PixelMenuOverlay>
+        ) : null}
       </PixelAppShell>
     );
   }
@@ -389,7 +440,7 @@ export default function App() {
       <PixelAppShell>
         {loading ? <PixelLoadingOverlay type={loading} /> : null}
         <PixelHudHeader state={finalState} onOpenSettings={() => setMenu("settings")} />
-        <PixelFinalResultCard state={finalState} ending={ending.title} endingText={ending.text} />
+        <PixelFinalResultCard state={finalState} ending={ending} onRestart={restart} />
         {menu === "settings" ? (
           <PixelMenuOverlay title="SETTINGS" onClose={() => setMenu(null)}>
             <PixelSettingsMenu

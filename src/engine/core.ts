@@ -3,6 +3,31 @@ import { mainEvents } from "../data/mainEvents";
 import { randomEvents } from "../data/randomEvents";
 import { Effect, Ending, EventCondition, FinalGradeResult, GameEvent, GameState, Outcome } from "../types";
 
+const ENDING_RULES = {
+  mentalCollapse: 10,
+  attendanceLostGauge: 25,
+  attendanceLostScore: 5,
+  semesterCollapse: 45,
+  academicHigh: 85,
+  zombieMental: 30,
+  balancedMental: 50,
+  balancedStamina: 50,
+  teamSlaveContribution: 70,
+  teamSlaveMental: 45,
+  professorRadarAggro: 30,
+  professorRadarGrade: 70,
+  selfHolidayMasterGauge: 35,
+  socialEndingScore: 80,
+  socialEndingMental: 35,
+  soloMealTolerance: 15,
+  soloMealSocial: 45,
+  soloMealMental: 35,
+  examSurvivorScore: 75,
+  examSurvivorStamina: 35,
+  assignmentHumanScore: 25,
+  assignmentHumanMental: 50,
+} as const;
+
 export const initialGameState: GameState = {
   playerName: "익명의 대학생",
   department: "미정학과",
@@ -22,13 +47,12 @@ export const initialGameState: GameState = {
     professorAggro: 10,
   },
   hidden: {
-    attendance: 80,
-    assignment: 50,
+    attendance: 0,
+    assignment: 0,
     teamContribution: 20,
     teamStability: 50,
     selfHolidayGauge: 0,
     soloMealTolerance: 0,
-    caffeine: 0,
     midtermScore: null,
     finalScore: null,
   },
@@ -65,7 +89,7 @@ export function applyEffects(state: GameState, effects: Effect[]) {
     next.stats[key] = clamp(next.stats[key]);
   }
 
-  for (const key of ["attendance", "assignment", "teamContribution", "teamStability", "selfHolidayGauge", "soloMealTolerance", "caffeine"] as const) {
+  for (const key of ["attendance", "assignment", "teamContribution", "teamStability", "selfHolidayGauge", "soloMealTolerance"] as const) {
     next.hidden[key] = clamp(next.hidden[key]);
   }
 
@@ -88,7 +112,6 @@ export function calculateMidtermScore(state: GameState, choiceBonus: number) {
 
 export function calculateFinalScore(state: GameState, choiceBonus: number) {
   const burnoutPenalty = (state.stats.mental <= 20 ? 10 : 0) + (state.stats.stamina <= 20 ? 8 : 0);
-  const caffeineBonus = state.hidden.caffeine >= 20 && state.hidden.caffeine <= 60 ? 5 : state.hidden.caffeine > 60 ? 2 : 0;
   return Math.round(
     clamp(
       state.stats.grade * 0.6 +
@@ -96,17 +119,9 @@ export function calculateFinalScore(state: GameState, choiceBonus: number) {
         state.hidden.assignment * 0.1 +
         choiceBonus +
         randomRange(-8, 8) -
-        burnoutPenalty +
-        caffeineBonus,
+        burnoutPenalty,
     ),
   );
-}
-
-export function applyFinalExamSideEffects(state: GameState) {
-  if (state.hidden.caffeine > 60) {
-    return applyEffects(state, [{ target: "mental", value: -5 }]);
-  }
-  return state;
 }
 
 export function pickClassEvent(state: GameState) {
@@ -159,23 +174,23 @@ export function calculateFinalGrades(state: GameState): FinalGradeResult {
   const midtermScore = state.hidden.midtermScore ?? 50;
   const finalScore = state.hidden.finalScore ?? 50;
   const academicScore = clamp(
-    state.stats.grade * 0.35 +
-      state.hidden.attendance * 0.15 +
-      state.hidden.assignment * 0.15 +
-      state.hidden.teamContribution * 0.1 +
-      midtermScore * 0.12 +
-      finalScore * 0.13,
+    state.stats.grade * 0.45 +
+      midtermScore * 0.18 +
+      finalScore * 0.18 +
+      state.hidden.assignment * 0.08 +
+      state.hidden.attendance * 0.06 +
+      state.hidden.teamContribution * 0.05,
   );
   const moneyScore = normalizeMoney(state.stats.money);
   const survivalScore = clamp(
-    academicScore * 0.35 +
-      state.stats.mental * 0.2 +
-      state.stats.stamina * 0.15 +
-      state.stats.social * 0.12 +
-      moneyScore * 0.08 +
-      state.hidden.attendance * 0.05 +
-      state.hidden.assignment * 0.05 -
-      state.stats.professorAggro * 0.08,
+    academicScore * 0.3 +
+      state.stats.mental * 0.22 +
+      state.stats.stamina * 0.18 +
+      state.stats.social * 0.14 +
+      moneyScore * 0.1 +
+      state.hidden.attendance * 0.03 +
+      state.hidden.assignment * 0.03 -
+      state.stats.professorAggro * 0.06,
   );
 
   return {
@@ -187,9 +202,10 @@ export function calculateFinalGrades(state: GameState): FinalGradeResult {
 export function determineEnding(state: GameState, finalGradeResult: FinalGradeResult): Ending {
   const endings: Array<{ condition: boolean; ending: Ending }> = [
     {
-      condition: state.stats.mental <= 10,
+      condition: state.stats.mental <= ENDING_RULES.mentalCollapse,
       ending: {
         title: "휴학 고민 엔딩",
+        tone: "danger",
         text: "점수보다 중요한 것이 있다는 걸 깨달았다.\n당신은 포털보다 휴학 신청 페이지를 더 오래 바라보았다.",
       },
     },
@@ -197,83 +213,104 @@ export function determineEnding(state: GameState, finalGradeResult: FinalGradeRe
       condition: state.stats.money <= 0,
       ending: {
         title: "잔고 실종 엔딩",
+        tone: "danger",
         text: "학기는 끝났다.\n잔고도 끝났다.\n지갑은 가장 조용한 보스였다.",
       },
     },
     {
-      condition: state.hidden.attendance <= 40,
+      condition: state.hidden.selfHolidayGauge >= ENDING_RULES.attendanceLostGauge && state.hidden.attendance <= ENDING_RULES.attendanceLostScore,
       ending: {
         title: "출석부 실종 엔딩",
+        tone: "danger",
         text: "수업은 있었고, 당신은 자주 없었다.\n출석부는 생각보다 기억력이 좋았다.",
       },
     },
     {
-      condition: finalGradeResult.survivalScore < 45,
+      condition: finalGradeResult.survivalScore < ENDING_RULES.semesterCollapse,
       ending: {
         title: "학기 붕괴 엔딩",
+        tone: "danger",
         text: "학기는 끝났지만 상태창은 조용하지 않았다.\n다음 학기에는 튜토리얼부터 다시 봐야 할지도 모른다.",
       },
     },
     {
-      condition: finalGradeResult.academicScore >= 85 && state.stats.mental <= 30,
+      condition: finalGradeResult.academicScore >= ENDING_RULES.academicHigh && state.stats.mental <= ENDING_RULES.zombieMental,
       ending: {
         title: "좀비 우등생 엔딩",
+        tone: "academic",
         text: "학업 스탯은 살아남았다.\n당신은 잘 모르겠다.",
       },
     },
     {
-      condition: finalGradeResult.academicScore >= 85 && state.stats.mental > 50 && state.stats.stamina > 50,
+      condition:
+        finalGradeResult.academicScore >= ENDING_RULES.academicHigh &&
+        state.stats.mental > ENDING_RULES.balancedMental &&
+        state.stats.stamina > ENDING_RULES.balancedStamina,
       ending: {
         title: "균형 생존 엔딩",
+        tone: "survival",
         text: "당신은 공부도 하고 잠도 잤다.\n이론상 드문 일이지만, 아무튼 성공했다.",
       },
     },
     {
-      condition: state.hidden.teamContribution >= 80 && state.stats.mental <= 45,
+      condition: state.hidden.teamContribution >= ENDING_RULES.teamSlaveContribution && state.stats.mental <= ENDING_RULES.teamSlaveMental,
       ending: {
         title: "팀플 노예 엔딩",
+        tone: "danger",
         text: "팀플은 끝났다.\n하지만 당신은 아직도 PPT 애니메이션을 수정하고 있는 기분이다.",
       },
     },
     {
-      condition: state.stats.professorAggro >= 85 && state.stats.grade < 65,
+      condition: state.stats.professorAggro >= ENDING_RULES.professorRadarAggro && state.stats.grade < ENDING_RULES.professorRadarGrade,
       ending: {
         title: "교수님 레이더 엔딩",
+        tone: "danger",
         text: "교수님의 시선이 너무 오래 머물렀다.\n당신은 이제 질문이 아니라 사건에 가깝다.",
       },
     },
     {
-      condition: state.hidden.selfHolidayGauge >= 75 && state.hidden.attendance >= 45,
+      condition: state.hidden.selfHolidayGauge >= ENDING_RULES.selfHolidayMasterGauge && finalGradeResult.survivalScore >= ENDING_RULES.semesterCollapse,
       ending: {
         title: "자휴 마스터 엔딩",
+        tone: "rare",
         text: "당신은 수많은 수업을 보내주었다.\n그런데도 어떻게든 살아남았다.\n시스템도 약간 당황했다.",
       },
     },
     {
-      condition: state.stats.social >= 80 && state.stats.mental >= 35,
+      condition: state.stats.social >= ENDING_RULES.socialEndingScore && state.stats.mental >= ENDING_RULES.socialEndingMental,
       ending: {
         title: "인싸 생존 엔딩",
+        tone: "rare",
         text: "학업이 완벽하지는 않았지만,\n당신의 연락처 목록은 풍성해졌다.\n이것도 대학생활이다.",
       },
     },
     {
-      condition: state.hidden.soloMealTolerance >= 60 && state.stats.social <= 35 && state.stats.mental >= 40,
+      condition:
+        state.hidden.soloMealTolerance >= ENDING_RULES.soloMealTolerance &&
+        state.stats.social <= ENDING_RULES.soloMealSocial &&
+        state.stats.mental >= ENDING_RULES.soloMealMental,
       ending: {
         title: "혼밥 고수 엔딩",
+        tone: "rare",
         text: "당신은 혼자 밥을 먹는 법을 배웠다.\n그리고 생각보다 괜찮았다.",
       },
     },
     {
-      condition: (state.hidden.midtermScore ?? 0) >= 75 && (state.hidden.finalScore ?? 0) >= 75 && state.stats.stamina <= 35,
+      condition:
+        (state.hidden.midtermScore ?? 0) >= ENDING_RULES.examSurvivorScore &&
+        (state.hidden.finalScore ?? 0) >= ENDING_RULES.examSurvivorScore &&
+        state.stats.stamina <= ENDING_RULES.examSurvivorStamina,
       ending: {
         title: "벼락치기 생존 엔딩",
+        tone: "survival",
         text: "시험 점수는 어떻게든 건졌다.\n몸은 아직 도서관 의자에 남아 있는 것 같다.",
       },
     },
     {
-      condition: state.hidden.assignment >= 85 && state.stats.mental <= 45,
+      condition: state.hidden.assignment >= ENDING_RULES.assignmentHumanScore && state.stats.mental <= ENDING_RULES.assignmentHumanMental,
       ending: {
         title: "과제형 인간 엔딩",
+        tone: "academic",
         text: "마감은 전부 지나갔다.\n당신은 아직 파일명을 final_real_last로 저장하고 있다.",
       },
     },
@@ -282,6 +319,7 @@ export function determineEnding(state: GameState, finalGradeResult: FinalGradeRe
   return (
     endings.find(({ condition }) => condition)?.ending ?? {
       title: "평범한 대학생 엔딩",
+      tone: "normal",
       text: "엄청나게 성공하지도,\n완전히 망하지도 않았다.\n그래서 더 현실적이었다.",
     }
   );
@@ -325,7 +363,6 @@ function getClassWeight(event: GameEvent, state: GameState) {
   if (event.id === "class-late-wakeup" && state.stats.stamina <= 30) weight += 15;
   if (event.id === "class-surprise-question" && state.stats.professorAggro >= 60) weight += 18;
   if (event.id === "class-attendance" && state.hidden.attendance <= 60) weight += 10;
-  if (event.id === "class-sleepy" && state.hidden.caffeine >= 45) weight += 8;
   return weight;
 }
 
@@ -336,8 +373,7 @@ function getRandomWeight(event: GameEvent, state: GameState) {
   if (event.id === "random-balance" && state.stats.money <= 10000) weight += 24;
   if (event.id === "random-team-silent" && state.hidden.teamStability <= 40) weight += 22;
   if (event.id === "random-self-holiday" && state.hidden.selfHolidayGauge >= 50) weight += 20;
-  if (event.id === "random-caffeine" && state.hidden.caffeine >= 60) weight += 30;
-  if (event.id === "random-lms" && state.stats.professorAggro >= 60) weight += 8;
+  if (event.id === "random-lms" && state.stats.professorAggro >= ENDING_RULES.professorRadarAggro) weight += 8;
   return weight;
 }
 

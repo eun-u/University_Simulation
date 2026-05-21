@@ -94,7 +94,7 @@ img {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px;
+  padding: 14px 13px;
   background: var(--px-panel-900);
   border-bottom: 4px solid var(--px-line-black);
   font-family: var(--font-pixel);
@@ -105,7 +105,7 @@ img {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   background: var(--px-panel-900);
   border-bottom: 4px solid var(--px-line-black);
 }
@@ -155,7 +155,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   color: var(--px-text-main);
   background: var(--px-bg-800);
   border: 3px solid var(--px-line-black);
@@ -165,9 +165,9 @@ img {
 }
 
 .quick-stat img {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
 }
 
 .hud-menu-button {
@@ -196,8 +196,8 @@ img {
 }
 
 .hud-avatar {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   background: var(--px-panel-700);
   border: 3px solid var(--px-line-black);
   box-shadow: 3px 3px 0 var(--px-line-black);
@@ -206,7 +206,7 @@ img {
 .hud-title {
   overflow: hidden;
   color: var(--px-text-main);
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -224,7 +224,7 @@ img {
 }
 
 .hud-chip {
-  height: 34px;
+  height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -237,8 +237,11 @@ img {
 }
 
 .hud-settings-button {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   color: var(--px-text-main);
   background: var(--px-coral);
@@ -373,16 +376,17 @@ img {
 
 .PixelEventScene {
   flex: 0 0 auto;
-  margin: 10px;
+  margin: 8px 10px 7px;
   overflow: hidden;
 }
 
 .scene-banner {
   position: relative;
-  min-height: clamp(98px, 17dvh, 132px);
-  display: grid;
-  place-items: end start;
-  padding: 12px;
+  aspect-ratio: 1448 / 272;
+  min-height: 70px;
+  max-height: 106px;
+  display: block;
+  padding: 0;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 12px 12px,
     linear-gradient(0deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 12px 12px,
@@ -397,40 +401,13 @@ img {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
-}
-
-.scene-kicker {
-  position: relative;
-  z-index: 1;
-  display: inline-block;
-  margin: 0 0 6px;
-  padding: 5px 8px;
-  color: var(--px-text-dark);
-  background: var(--px-mint);
-  border: 3px solid var(--px-line-black);
-  font-family: var(--font-pixel);
-  font-size: 10px;
-}
-
-.scene-title {
-  position: relative;
-  z-index: 1;
-  display: inline-block;
-  margin: 0;
-  padding: 8px 10px;
-  color: var(--px-text-main);
-  background: rgba(3, 3, 13, 0.86);
-  border: 3px solid var(--px-line-black);
-  font-family: var(--font-pixel);
-  font-size: 17px;
-  line-height: 1.35;
-  text-shadow: 3px 3px 0 var(--px-line-black);
+  background: #050a23;
 }
 
 .scene-meta {
-  padding: 8px 12px;
+  padding: 6px 10px;
   color: var(--px-text-sub);
   background: var(--px-panel-900);
   font-family: var(--font-pixel);
@@ -447,24 +424,24 @@ img {
 
 .game-screen--result,
 .game-screen--summary {
-  justify-content: center;
-  padding-bottom: 12px;
+  justify-content: stretch;
+  padding-bottom: 8px;
 }
 
 .event-play-area {
   min-height: 0;
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  gap: 10px;
-  padding: 0 10px 8px;
+  grid-template-columns: clamp(58px, 17vw, 76px) minmax(0, 1fr);
+  gap: 8px;
+  padding: 0 10px 4px;
 }
 
 .event-icon-frame {
   align-self: start;
   display: grid;
-  width: 82px;
-  height: 82px;
+  width: 100%;
+  aspect-ratio: 1;
   place-items: center;
   background: var(--px-panel-700);
   border: 4px solid var(--px-line-black);
@@ -474,19 +451,20 @@ img {
 }
 
 .event-icon {
-  width: 66px;
-  height: 66px;
+  width: 80%;
+  height: 80%;
   object-fit: contain;
 }
 
 .PixelChatWindow {
   min-height: 0;
-  overflow: hidden;
+  height: 100%;
+  overflow: auto;
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
-  padding: 10px;
+  padding: 9px;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px) 0 0 / 12px 12px,
     #0d0b2b;
@@ -507,9 +485,9 @@ img {
 }
 
 .chat-avatar {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: clamp(30px, 9vw, 42px);
+  height: clamp(30px, 9vw, 42px);
+  flex: 0 0 clamp(30px, 9vw, 42px);
   background: var(--px-panel-700);
   border: 3px solid var(--px-line-black);
   box-shadow: 3px 3px 0 var(--px-line-black);
@@ -518,11 +496,11 @@ img {
 .chat-box {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--px-panel-800);
   border: 3px solid var(--px-line-black);
   box-shadow: 4px 4px 0 var(--px-line-black);
-  line-height: 1.65;
+  line-height: 1.55;
 }
 
 .PixelChatBubble--system .chat-box {
@@ -546,15 +524,16 @@ img {
 
 .chat-text {
   white-space: pre-wrap;
-  font-size: 14px;
+  font-size: clamp(12px, 3.2vw, 14px);
 }
 
 .choice-dock {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(0, 1fr);
   gap: 8px;
-  max-height: 31dvh;
+  height: clamp(142px, 26dvh, 210px);
   padding: 10px;
   background: var(--px-bg-950);
   border-top: 4px solid var(--px-line-black);
@@ -563,8 +542,8 @@ img {
 
 .choice-button {
   width: 100%;
-  min-height: 62px;
-  padding: 10px 10px;
+  min-height: 0;
+  padding: 8px 9px;
   color: var(--px-text-main);
   background: var(--px-panel-700);
   border: 4px solid var(--px-line-black);
@@ -573,8 +552,8 @@ img {
     5px 5px 0 var(--px-line-black);
   cursor: pointer;
   font-family: var(--font-pixel);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: clamp(10px, 2.9vw, 12px);
+  line-height: 1.35;
   text-align: left;
 }
 
@@ -587,7 +566,7 @@ img {
   margin-top: 4px;
   color: var(--px-text-sub);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: clamp(10px, 2.8vw, 12px);
 }
 
 .choice-button:hover {
@@ -676,32 +655,42 @@ img {
 
 .PixelWeekSummary {
   display: grid;
-  gap: 10px;
+  align-content: start;
+  gap: 8px;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .summary-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
 .summary-list {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .summary-list li {
-  padding: 8px;
+  padding: 7px;
   background: var(--px-bg-800);
   border: 3px solid var(--px-line-black);
+  font-size: clamp(12px, 3.2vw, 14px);
+  line-height: 1.45;
 }
 
 .PixelFinalResultCard {
+  min-height: 0;
+  flex: 1 1 auto;
   display: grid;
-  gap: 8px;
+  align-content: start;
+  gap: 7px;
+  max-height: calc(100dvh - 96px);
+  overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 12px 12px,
     var(--px-panel-900);
@@ -710,8 +699,46 @@ img {
     8px 8px 0 var(--px-line-black);
 }
 
+.ending-hero {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  background: var(--px-bg-800);
+  border: 4px solid var(--px-line-black);
+  box-shadow: 4px 4px 0 var(--px-line-black);
+}
+
+.ending-hero--normal {
+  box-shadow: 4px 4px 0 var(--px-gold);
+}
+
+.ending-hero--academic {
+  box-shadow: 4px 4px 0 var(--px-purple-light);
+}
+
+.ending-hero--rare {
+  box-shadow: 4px 4px 0 var(--px-mint);
+}
+
+.ending-hero--survival {
+  box-shadow: 4px 4px 0 var(--px-cyan);
+}
+
+.ending-hero--danger {
+  box-shadow: 4px 4px 0 var(--px-coral);
+}
+
+.ending-hero__badge {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
 .PixelFinalResultCard .pixel-title {
-  font-size: 18px;
+  font-size: clamp(16px, 4.4vw, 18px);
+  line-height: 1.2;
 }
 
 .PixelFinalResultCard .status-menu {
@@ -768,13 +795,59 @@ img {
 
 .PixelFinalResultCard .ending-text {
   margin-bottom: 4px;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: clamp(10px, 2.9vw, 12px);
+  line-height: 1.35;
 }
 
 .PixelFinalResultCard .pixel-control {
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+.final-status-compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.final-stat-tile {
+  min-width: 0;
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  background: var(--px-bg-800);
+  border: 3px solid var(--px-line-black);
+  box-shadow: 3px 3px 0 var(--px-line-black);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+}
+
+.final-stat-tile img {
+  width: 26px;
+  height: 26px;
+}
+
+.final-stat-tile span {
+  color: var(--px-text-sub);
+}
+
+.final-stat-tile strong {
+  color: var(--px-text-main);
+  font-size: 11px;
+  text-align: right;
+}
+
+.final-status-compact .hidden-stat {
+  min-height: 40px;
+  padding: 5px 4px;
+}
+
+.final-badge-grid {
+  max-height: 56px;
+  overflow: hidden;
 }
 
 .start-hero {
@@ -833,8 +906,34 @@ img {
 }
 
 .start-panel {
+  position: relative;
   display: grid;
   gap: 14px;
+}
+
+.start-settings-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--px-text-main);
+  background: var(--px-coral);
+  border: 4px solid var(--px-line-black);
+  box-shadow: 4px 4px 0 var(--px-line-black);
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  line-height: 1;
+  z-index: 2;
+}
+
+.start-settings-button:focus-visible {
+  outline: 4px solid var(--px-gold);
+  outline-offset: 3px;
 }
 
 .start-logo {
@@ -906,6 +1005,131 @@ img {
     margin-top: 24px;
     margin-bottom: 24px;
     box-shadow: 12px 12px 0 var(--px-line-black);
+  }
+}
+
+@media (max-width: 480px) {
+  .PixelAppShell {
+    border-left-width: 0;
+    border-right-width: 0;
+  }
+
+  .PixelHudHeader {
+    padding: 10px 11px;
+    gap: 6px;
+  }
+
+  .hud-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .hud-title {
+    max-width: 150px;
+    font-size: 12px;
+  }
+
+  .hud-subtitle,
+  .hud-chip {
+    font-size: 9px;
+  }
+
+  .hud-chip,
+  .hud-settings-button {
+    height: 38px;
+  }
+
+  .hud-settings-button {
+    width: 38px;
+  }
+
+  .PixelQuickHud {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px 7px;
+  }
+
+  .quick-stat,
+  .hud-menu-button {
+    min-height: 32px;
+    font-size: 10px;
+  }
+
+  .quick-stat img {
+    width: 20px;
+    height: 20px;
+    flex-basis: 20px;
+  }
+
+  .PixelRunProgress {
+    padding: 5px 8px;
+  }
+
+  .progress-row {
+    grid-template-columns: 112px 1fr;
+    font-size: 9px;
+  }
+
+  .event-play-area {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0 10px 4px;
+  }
+
+  .event-icon-frame {
+    display: none;
+  }
+
+  .PixelChatWindow {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .chat-avatar {
+    display: block;
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+
+  .choice-dock {
+    height: clamp(132px, 24dvh, 178px);
+    padding: 8px;
+  }
+
+  .PixelWeekSummary,
+  .PixelFinalResultCard,
+  .PixelResultPanel {
+    margin: 8px;
+    padding: 10px;
+  }
+
+  .PixelWeekSummary .pixel-title {
+    font-size: clamp(22px, 7vw, 28px);
+  }
+
+  .PixelWeekSummary .PixelBadge {
+    max-width: 100%;
+    font-size: 10px;
+  }
+
+  .ending-hero {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .ending-hero__badge {
+    width: 60px;
+    height: 60px;
+  }
+
+  .final-status-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .final-badge-grid .PixelBadge:nth-child(n + 3) {
+    display: none;
   }
 }
 
@@ -1043,30 +1267,38 @@ img {
 
 @media (max-height: 700px) {
   .scene-banner {
-    min-height: 86px;
+    min-height: 62px;
+    max-height: 92px;
   }
 
   .event-play-area {
-    grid-template-columns: 68px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
   }
 
   .event-icon-frame {
-    width: 68px;
-    height: 68px;
+    width: 100%;
   }
 
   .event-icon {
-    width: 54px;
-    height: 54px;
+    width: 78%;
+    height: 78%;
   }
 
   .chat-avatar {
-    display: none;
+    display: block;
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
   }
 
   .choice-button {
-    min-height: 54px;
-    font-size: 11px;
+    min-height: 0;
+    font-size: 10px;
+  }
+
+  .choice-dock {
+    height: 126px;
+    padding: 8px;
   }
 
   .prologue-screen {

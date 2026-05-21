@@ -164,7 +164,6 @@ export const mainEvents: GameEvent[] = [
           { target: "stamina", value: -25 },
           { target: "money", value: -20000 },
           { target: "mental", value: -5 },
-          { target: "caffeine", value: 5 },
         ],
         addTitle: "MT 이후 기억상실자",
       },
@@ -303,6 +302,7 @@ export const mainEvents: GameEvent[] = [
     weekName: "과제 누적",
     title: "첫 과제 더미",
     time: "5주차",
+    assetKey: "week5",
     avatar: "lms",
     intro: ["과제가 쌓이기 시작했다.", "아직 감당할 수 있을 것 같다.", "이 생각이 가장 위험하다."],
     options: [
@@ -370,7 +370,6 @@ export const mainEvents: GameEvent[] = [
           { target: "grade", value: 15 },
           { target: "stamina", value: -25 },
           { target: "mental", value: -8 },
-          { target: "caffeine", value: 15 },
         ],
       },
       {
@@ -491,6 +490,7 @@ export const mainEvents: GameEvent[] = [
     weekName: "대학 축제",
     title: "대학 축제",
     time: "8주차",
+    assetKey: "week8",
     avatar: "friend",
     intro: ["중간고사가 끝났다.", "캠퍼스에 푸드트럭과 무대 조명이 들어왔다.", "공부는 잠깐 사라졌고 지갑은 긴장했다."],
     options: [
@@ -712,6 +712,7 @@ export const mainEvents: GameEvent[] = [
     weekName: "권태기",
     title: "자휴 유혹",
     time: "11주차",
+    assetKey: "week11",
     avatar: "system",
     intro: ["수업까지 3분 남았다.", "강의실은 4층이다. 엘리베이터는 만원이다.", "운명이 묻는다. “굳이?”"],
     options: [
@@ -886,7 +887,7 @@ export const mainEvents: GameEvent[] = [
         effects: [
           { target: "grade", value: 8 },
           { target: "money", value: -6000 },
-          { target: "caffeine", value: 10 },
+          { target: "stamina", value: 5 },
           { target: "mental", value: 2 },
         ],
       },
@@ -1019,6 +1020,7 @@ export const mainEvents: GameEvent[] = [
     weekName: "종강",
     title: "종강",
     time: "15주차",
+    assetKey: "week15",
     avatar: "friend",
     intro: ["종강했다.", "자유가 찾아왔다.", "하지만 성적 확인이라는 최종 보스가 아직 남아 있다."],
     options: [
