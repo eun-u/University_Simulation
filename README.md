@@ -78,6 +78,12 @@ npm install
 npm run dev
 ```
 
+웹 배포 URL:
+
+```text
+https://eun-u.github.io/University_Simulation/
+```
+
 프로덕션 빌드:
 
 ```bash
