@@ -5,11 +5,13 @@ import { Effect, Ending, EventCondition, FinalGradeResult, GameEvent, GameState,
 
 export const initialGameState: GameState = {
   playerName: "익명의 대학생",
+  department: "미정학과",
   week: 1,
   phase: "start",
   eventQueue: [],
   history: [],
   recentClassEventIds: [],
+  scheduledRandomEvents: [],
   titles: [],
   stats: {
     grade: 50,
@@ -124,6 +126,29 @@ export function pickRandomLifeEvent(state: GameState) {
   return weightedPick(pool.map((event) => ({ item: event, weight: getRandomWeight(event, state) })));
 }
 
+export function createRandomEventSchedule() {
+  const randomWeeks = shuffle([2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 15]).slice(0, 2).sort((a, b) => a - b);
+  const usedEventIds = new Set<string>();
+
+  return randomWeeks.map((week) => {
+    const candidates = randomEvents.filter((event) => isScheduleCompatible(event, week) && !usedEventIds.has(event.id));
+    const event = candidates.length > 0 ? candidates[Math.floor(Math.random() * candidates.length)] : randomEvents[0];
+    usedEventIds.add(event.id);
+    return { week, eventId: event.id };
+  });
+}
+
+export function scheduledRandomEventForWeek(state: GameState) {
+  const scheduled = state.scheduledRandomEvents.find((event) => event.week === state.week);
+  if (!scheduled) return null;
+
+  const event = randomEvents.find((candidate) => candidate.id === scheduled.eventId);
+  if (event && matchesCondition(event.condition, state)) return event;
+
+  const fallback = randomEvents.find((candidate) => isScheduleCompatible(candidate, state.week) && matchesCondition(candidate.condition, state));
+  return fallback ?? null;
+}
+
 export function mainByWeek(week: number) {
   const event = mainEvents.find((candidate) => candidate.week === week);
   if (!event) throw new Error(`Missing main event for week ${week}`);
@@ -141,40 +166,20 @@ export function calculateFinalGrades(state: GameState): FinalGradeResult {
       midtermScore * 0.12 +
       finalScore * 0.13,
   );
-
-  const scores = [
-    ["전공필수", clamp(academicScore - state.stats.professorAggro * 0.08 + randomRange(-5, 5))],
-    ["교양", clamp(academicScore * 0.85 + state.stats.mental * 0.1 + randomRange(-5, 8))],
-    ["팀플 과목", clamp(academicScore * 0.45 + state.hidden.teamContribution * 0.35 + state.hidden.teamStability * 0.2 + randomRange(-5, 5))],
-    ["정체불명 과목", clamp(academicScore + randomRange(-15, 15))],
-  ] as const;
-
-  const subjects = scores.map(([name, score]) => {
-    const converted = convertScore(score);
-    return {
-      name,
-      score: Number(score.toFixed(1)),
-      letter: converted.letter,
-      gpa: converted.gpa,
-    };
-  });
-
-  const averageGpa = subjects.reduce((sum, subject) => sum + subject.gpa, 0) / subjects.length;
   const moneyScore = normalizeMoney(state.stats.money);
   const survivalScore = clamp(
-    academicScore * 0.4 +
-      state.stats.mental * 0.25 +
+    academicScore * 0.35 +
+      state.stats.mental * 0.2 +
       state.stats.stamina * 0.15 +
-      state.stats.social * 0.1 +
-      moneyScore * 0.1 -
-      state.stats.professorAggro * 0.05,
+      state.stats.social * 0.12 +
+      moneyScore * 0.08 +
+      state.hidden.attendance * 0.05 +
+      state.hidden.assignment * 0.05 -
+      state.stats.professorAggro * 0.08,
   );
 
   return {
     academicScore: Number(academicScore.toFixed(1)),
-    subjects,
-    averageGpa: Number(averageGpa.toFixed(2)),
-    survivalGrade: convertSurvivalScore(survivalScore),
     survivalScore: Number(survivalScore.toFixed(1)),
   };
 }
@@ -185,28 +190,42 @@ export function determineEnding(state: GameState, finalGradeResult: FinalGradeRe
       condition: state.stats.mental <= 10,
       ending: {
         title: "휴학 고민 엔딩",
-        text: "성적보다 중요한 것이 있다는 걸 깨달았다.\n당신은 포털보다 휴학 신청 페이지를 더 오래 바라보았다.",
+        text: "점수보다 중요한 것이 있다는 걸 깨달았다.\n당신은 포털보다 휴학 신청 페이지를 더 오래 바라보았다.",
       },
     },
     {
-      condition: finalGradeResult.averageGpa < 1,
+      condition: state.stats.money <= 0,
       ending: {
-        title: "F의 전설 엔딩",
-        text: "성적표는 조용했다.\n하지만 그 침묵이 모든 것을 말했다.",
+        title: "잔고 실종 엔딩",
+        text: "학기는 끝났다.\n잔고도 끝났다.\n지갑은 가장 조용한 보스였다.",
       },
     },
     {
-      condition: finalGradeResult.averageGpa >= 4 && state.stats.mental <= 30,
+      condition: state.hidden.attendance <= 40,
       ending: {
-        title: "좀비 장학생 엔딩",
-        text: "학점은 살아남았다.\n당신은 잘 모르겠다.",
+        title: "출석부 실종 엔딩",
+        text: "수업은 있었고, 당신은 자주 없었다.\n출석부는 생각보다 기억력이 좋았다.",
       },
     },
     {
-      condition: finalGradeResult.averageGpa >= 4 && state.stats.mental > 50,
+      condition: finalGradeResult.survivalScore < 45,
       ending: {
-        title: "A+ 인간 엔딩",
-        text: "당신은 공부도 하고 잠도 잤다.\n이론상 불가능한 일이지만, 아무튼 성공했다.",
+        title: "학기 붕괴 엔딩",
+        text: "학기는 끝났지만 상태창은 조용하지 않았다.\n다음 학기에는 튜토리얼부터 다시 봐야 할지도 모른다.",
+      },
+    },
+    {
+      condition: finalGradeResult.academicScore >= 85 && state.stats.mental <= 30,
+      ending: {
+        title: "좀비 우등생 엔딩",
+        text: "학업 스탯은 살아남았다.\n당신은 잘 모르겠다.",
+      },
+    },
+    {
+      condition: finalGradeResult.academicScore >= 85 && state.stats.mental > 50 && state.stats.stamina > 50,
+      ending: {
+        title: "균형 생존 엔딩",
+        text: "당신은 공부도 하고 잠도 잤다.\n이론상 드문 일이지만, 아무튼 성공했다.",
       },
     },
     {
@@ -217,17 +236,24 @@ export function determineEnding(state: GameState, finalGradeResult: FinalGradeRe
       },
     },
     {
-      condition: state.hidden.selfHolidayGauge >= 75 && finalGradeResult.averageGpa >= 2,
+      condition: state.stats.professorAggro >= 85 && state.stats.grade < 65,
+      ending: {
+        title: "교수님 레이더 엔딩",
+        text: "교수님의 시선이 너무 오래 머물렀다.\n당신은 이제 질문이 아니라 사건에 가깝다.",
+      },
+    },
+    {
+      condition: state.hidden.selfHolidayGauge >= 75 && state.hidden.attendance >= 45,
       ending: {
         title: "자휴 마스터 엔딩",
         text: "당신은 수많은 수업을 보내주었다.\n그런데도 어떻게든 살아남았다.\n시스템도 약간 당황했다.",
       },
     },
     {
-      condition: state.stats.social >= 80 && finalGradeResult.averageGpa >= 2,
+      condition: state.stats.social >= 80 && state.stats.mental >= 35,
       ending: {
         title: "인싸 생존 엔딩",
-        text: "학점은 완벽하지 않았지만,\n당신의 연락처 목록은 풍성해졌다.\n이것도 대학생활이다.",
+        text: "학업이 완벽하지는 않았지만,\n당신의 연락처 목록은 풍성해졌다.\n이것도 대학생활이다.",
       },
     },
     {
@@ -238,10 +264,17 @@ export function determineEnding(state: GameState, finalGradeResult: FinalGradeRe
       },
     },
     {
-      condition: state.stats.money <= 0,
+      condition: (state.hidden.midtermScore ?? 0) >= 75 && (state.hidden.finalScore ?? 0) >= 75 && state.stats.stamina <= 35,
       ending: {
-        title: "잔고 실종 엔딩",
-        text: "학기는 끝났다.\n잔고도 끝났다.",
+        title: "벼락치기 생존 엔딩",
+        text: "시험 점수는 어떻게든 건졌다.\n몸은 아직 도서관 의자에 남아 있는 것 같다.",
+      },
+    },
+    {
+      condition: state.hidden.assignment >= 85 && state.stats.mental <= 45,
+      ending: {
+        title: "과제형 인간 엔딩",
+        text: "마감은 전부 지나갔다.\n당신은 아직 파일명을 final_real_last로 저장하고 있다.",
       },
     },
   ];
@@ -261,8 +294,8 @@ export function addDerivedTitles(state: GameState, finalGradeResult: FinalGradeR
   };
 
   if (next.hidden.attendance >= 90 && next.stats.mental <= 30) add("출석만은 지킨 껍데기");
-  if (Math.abs(finalGradeResult.averageGpa - 2.5) <= 0.15) add("C+의 기적");
-  if (finalGradeResult.averageGpa >= 4 && next.stats.mental <= 25) add("A+인데 행복하지 않은 자");
+  if (finalGradeResult.survivalScore >= 55 && finalGradeResult.survivalScore <= 62) add("커트라인 생존자");
+  if (finalGradeResult.academicScore >= 85 && next.stats.mental <= 25) add("우수하지만 행복하지 않은 자");
   return next;
 }
 
@@ -318,22 +351,19 @@ function normalizeMoney(money: number) {
   return (money / 60000) * 100;
 }
 
-function convertScore(score: number) {
-  if (score >= 95) return { letter: "A+", gpa: 4.5 };
-  if (score >= 90) return { letter: "A0", gpa: 4 };
-  if (score >= 85) return { letter: "B+", gpa: 3.5 };
-  if (score >= 80) return { letter: "B0", gpa: 3 };
-  if (score >= 75) return { letter: "C+", gpa: 2.5 };
-  if (score >= 70) return { letter: "C0", gpa: 2 };
-  if (score >= 60) return { letter: "D+", gpa: 1.5 };
-  return { letter: "F", gpa: 0 };
+function isScheduleCompatible(event: GameEvent, week: number) {
+  const condition = event.condition;
+  if (!condition) return true;
+  if (condition.minWeek !== undefined && week < condition.minWeek) return false;
+  if (condition.maxWeek !== undefined && week > condition.maxWeek) return false;
+  return !condition.minStats && !condition.maxStats && !condition.minHidden && !condition.maxHidden;
 }
 
-function convertSurvivalScore(score: number) {
-  if (score >= 90) return "S";
-  if (score >= 80) return "A";
-  if (score >= 70) return "B";
-  if (score >= 60) return "C";
-  if (score >= 50) return "D";
-  return "F";
+function shuffle<T>(items: T[]) {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+  return next;
 }

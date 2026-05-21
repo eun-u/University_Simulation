@@ -1,6 +1,6 @@
-import { CSSProperties, ReactNode } from "react";
+import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { pixelAssetMap, PixelAvatar } from "../assets/pixelAssetMap";
-import { Effect, EventOption, FinalGradeResult, GameEvent, GameState } from "../types";
+import { Effect, EventOption, GameEvent, GameState, LoadingType } from "../types";
 
 const statLabels = {
   grade: "학점",
@@ -36,17 +36,75 @@ export function PixelAppShell({ children }: { children: ReactNode }) {
   return <main className="PixelAppShell">{children}</main>;
 }
 
-export function PixelHudHeader({ state }: { state: GameState }) {
+export function PixelLoadingOverlay({ type }: { type: LoadingType }) {
+  const messages: Record<LoadingType, string> = {
+    start: "입학 준비...",
+    week: "다음 주 준비...",
+    final: "최종 성적 계산...",
+  };
+  const [percent, setPercent] = useState(0);
+
+  useEffect(() => {
+    if (type === "final") return;
+    let raf = 0;
+    const duration = 1400;
+    let start = performance.now();
+    const tick = (now: number) => {
+      const t = (now - start) % duration;
+      const p = Math.floor((t / duration) * 100);
+      setPercent(p);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [type]);
+
+  return (
+    <div className="PixelLoadingOverlay">
+      <div className="PixelLoadingCard pixel-panel">
+        <div className="loading-container">
+          {type === "final" ? (
+            <div className="pixel-loader-final" aria-hidden>
+              <div className="pixel-block" />
+            </div>
+          ) : (
+            <div className="pixel-loading-legacy">
+              <div className="loading-header">
+                <div className="loading-label">LOADING...</div>
+                <div className="loading-percent">{percent}%</div>
+              </div>
+              <div className="segmented-bar" aria-hidden>
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="segment" style={{ animationDelay: `${i * 70}ms` }} />
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="loading-message">{messages[type]}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function PixelHudHeader({ state, onHome }: { state: GameState; onHome?: () => void }) {
   return (
     <header className="PixelHudHeader">
       <div className="hud-player">
         <img className="hud-avatar pixel-art" src={pixelAssetMap.avatar.player} alt="" />
         <div>
           <div className="hud-title">{state.playerName}</div>
-          <div className="hud-subtitle">1학년 1학기</div>
+          <div className="hud-subtitle">{state.department || "미정학과"}</div>
         </div>
       </div>
-      <div className="hud-chip">WEEK {String(state.week).padStart(2, "0")}</div>
+      <div className="hud-actions">
+        <div className="hud-chip">WEEK {String(state.week).padStart(2, "0")}</div>
+        {onHome ? (
+          <button className="hud-home-button" type="button" onClick={onHome} aria-label="초기 화면으로 돌아가기">
+            ↻
+          </button>
+        ) : null}
+      </div>
     </header>
   );
 }
@@ -54,11 +112,9 @@ export function PixelHudHeader({ state }: { state: GameState }) {
 export function PixelQuickHud({
   state,
   onOpenStatus,
-  onOpenMap,
 }: {
   state: GameState;
   onOpenStatus: () => void;
-  onOpenMap: () => void;
 }) {
   return (
     <section className="PixelQuickHud" aria-label="빠른 상태">
@@ -88,9 +144,6 @@ export function PixelQuickHud({
       </div>
       <button className="hud-menu-button" type="button" onClick={onOpenStatus}>
         STATUS
-      </button>
-      <button className="hud-menu-button" type="button" onClick={onOpenMap}>
-        WEEK
       </button>
     </section>
   );
@@ -170,6 +223,76 @@ export function PixelWeekMap({ week }: { week: number }) {
         );
       })}
     </nav>
+  );
+}
+
+export function PixelRunProgress({ current, total }: { current: number; total: number }) {
+  const progressPercent = total > 0 ? Math.max(0, Math.min(100, (current / total) * 100)) : 0;
+  const style = {
+    "--run-progress": `${progressPercent}%`,
+  } as CSSProperties;
+  return (
+    <section className="PixelRunProgress" aria-label="진행도" style={style}>
+      <div className="progress-row">
+        <span>PROGRESS {current}/{total}</span>
+        <div className="thin-progress">
+          <div className="thin-progress__fill thin-progress__fill--run" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function PixelPrologue({
+  playerName,
+  step,
+  onNext,
+  onSkip,
+}: {
+  playerName: string;
+  step: number;
+  onNext: () => void;
+  onSkip: () => void;
+}) {
+  const slides = [
+    {
+      image: pixelAssetMap.logo.title,
+      title: "새 학기가 시작된다",
+      text: "포털은 열렸고, 시간표는 아직 당신 편인지 모른다.",
+    },
+    {
+      image: pixelAssetMap.banner.week1,
+      title: "16주 생존 미션",
+      text: `${playerName}의 목표는 단순하다.\n학점, 멘탈, 체력, 지갑을 들고 성적 확인까지 버티기.`,
+    },
+    {
+      image: pixelAssetMap.avatar.professor,
+      title: "선택에는 대가가 있다",
+      text: "앞자리는 학점을 올리지만 멘탈을 깎는다.\n자휴는 달콤하지만 출석부는 기억한다.",
+    },
+  ];
+  const slide = slides[Math.min(step, slides.length - 1)];
+  const isLast = step >= slides.length - 1;
+
+  return (
+    <section className="PixelPrologue" onClick={onNext}>
+      <div className="prologue-card pixel-panel">
+        <div className="prologue-screen">
+          <img className="prologue-image pixel-art" src={slide.image} alt="" />
+        </div>
+        <div className="panel-label">PROLOGUE {step + 1}/{slides.length}</div>
+        <h1 className="pixel-title">{slide.title}</h1>
+        <p className="prologue-text">{slide.text}</p>
+        <div className="prologue-actions">
+          <button className="pixel-control" type="button" onClick={(event) => { event.stopPropagation(); onSkip(); }}>
+            SKIP
+          </button>
+          <button className="pixel-control pixel-control--primary" type="button" onClick={(event) => { event.stopPropagation(); onNext(); }}>
+            {isLast ? "START" : "NEXT"}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -354,11 +477,6 @@ export function PixelStatusMenu({ state }: { state: GameState }) {
       <section className="hidden-stat-grid" aria-label="보조 수치">
         <HiddenStat label="출석" value={state.hidden.attendance} />
         <HiddenStat label="과제" value={state.hidden.assignment} />
-        <HiddenStat label="팀플기여" value={state.hidden.teamContribution} />
-        <HiddenStat label="팀플안정" value={state.hidden.teamStability} />
-        <HiddenStat label="자휴" value={state.hidden.selfHolidayGauge} />
-        <HiddenStat label="혼밥내성" value={state.hidden.soloMealTolerance} />
-        <HiddenStat label="카페인" value={state.hidden.caffeine} />
         <HiddenStat label="중간" value={state.hidden.midtermScore ?? "-"} />
         <HiddenStat label="기말" value={state.hidden.finalScore ?? "-"} />
       </section>
@@ -387,13 +505,11 @@ export function PixelBadge({ children, tone = "normal" }: { children: ReactNode;
 
 export function PixelFinalResultCard({
   state,
-  final,
   ending,
   endingText,
   onRestart,
 }: {
   state: GameState;
-  final: FinalGradeResult;
   ending: string;
   endingText: string;
   onRestart: () => void;
@@ -402,20 +518,8 @@ export function PixelFinalResultCard({
   return (
     <section className="PixelFinalResultCard pixel-panel">
       <div className="panel-label">FINAL RESULT</div>
-      <div className="final-rank">
-        <div className="final-grade">{final.survivalGrade}</div>
-      </div>
-      <h1 className="pixel-title">1학기 최종 성적표</h1>
-      <div className="subject-grid">
-        {final.subjects.map((subject) => (
-          <div className="subject-card" key={subject.name}>
-            <div className="subject-name">{subject.name}</div>
-            <div className="subject-letter">{subject.letter}</div>
-            <div>{subject.score}점 / {subject.gpa.toFixed(1)}</div>
-          </div>
-        ))}
-      </div>
-      <p className="summary-text">평균 학점 {final.averageGpa.toFixed(2)} / 4.5 · 생존 점수 {final.survivalScore}</p>
+      <h1 className="pixel-title">최종 STATUS</h1>
+      <PixelStatusMenu state={state} />
       <div className="badge-grid">
         {titles.map((title) => (
           <PixelBadge key={title} tone="survival">
@@ -423,7 +527,10 @@ export function PixelFinalResultCard({
           </PixelBadge>
         ))}
       </div>
-      <h2 className="pixel-title">{ending}</h2>
+      <div className="ending-banner">
+        <span>ENDING</span>
+        <strong>{ending}</strong>
+      </div>
       <p className="ending-text">{endingText}</p>
       <button className="pixel-control pixel-control--primary" type="button" onClick={onRestart}>
         다시 하기
