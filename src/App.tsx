@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDerivedTitles,
   applyEffects,
@@ -33,6 +33,34 @@ import {
 } from "./components/pixel";
 
 const SAVE_KEY = "uni-rpg-save-v2";
+
+const SOUND_ASSETS = {
+  click: new URL("../sound/click.mp3", import.meta.url).href,
+  nextlog: new URL("../sound/nextlog.mp3", import.meta.url).href,
+  weekSummary: new URL("../sound/weekSummary.mp3", import.meta.url).href,
+  background: new URL("../sound/background.mp3", import.meta.url).href,
+} as const;
+
+const audioCache = new Map<string, HTMLAudioElement>();
+
+function playSound(src: string) {
+  if (typeof window === "undefined") return;
+
+  let audio = audioCache.get(src);
+  if (!audio) {
+    audio = new Audio(src);
+    audio.preload = "auto";
+    audioCache.set(src, audio);
+  }
+
+  try {
+    audio.currentTime = 0;
+  } catch {
+    // Ignore reset failures on not-yet-ready audio.
+  }
+
+  void audio.play().catch(() => {});
+}
 
 function loadGame() {
   try {
@@ -70,6 +98,57 @@ export default function App() {
   const [name, setName] = useState("");
   const [menu, setMenu] = useState<"status" | "map" | null>(null);
   const [loading, setLoading] = useState<"start" | "week" | "final" | null>(null);
+  const previousPhase = useRef(state.phase);
+  const backgroundAudio = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!backgroundAudio.current) {
+      backgroundAudio.current = new Audio(SOUND_ASSETS.background);
+      backgroundAudio.current.loop = true;
+      backgroundAudio.current.volume = 0.5;
+      backgroundAudio.current.preload = "auto";
+    }
+
+    if (state.phase !== "start") {
+      if (backgroundAudio.current.paused) {
+        void backgroundAudio.current.play().catch(() => {});
+      }
+    } else {
+      backgroundAudio.current.pause();
+      backgroundAudio.current.currentTime = 0;
+    }
+
+    return () => {
+      if (backgroundAudio.current) {
+        backgroundAudio.current.pause();
+      }
+    };
+  }, [state.phase]);
+
+
+  useEffect(() => {
+    const previous = previousPhase.current;
+    if (previous !== state.phase) {
+      if (state.phase === "event" && previous === "result") {
+        playSound(SOUND_ASSETS.nextlog);
+      }
+      if (state.phase === "weekSummary") {
+        playSound(SOUND_ASSETS.weekSummary);
+      }
+    }
+    previousPhase.current = state.phase;
+  }, [state.phase]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      if (!event.target.closest("button")) return;
+      playSound(SOUND_ASSETS.click);
+    };
+
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, []);
 
   const persist = (next: GameState) => {
     setState(next);
@@ -156,7 +235,9 @@ export default function App() {
       setTimeout(() => {
         next.phase = "final";
         persist(next);
-        setLoading(null);
+        // keep the final loading visible briefly so the overlay is shown
+        // during the final screen render, then hide it
+        setTimeout(() => setLoading(null), 600);
       }, 1500);
       return;
     } else {
@@ -215,6 +296,7 @@ export default function App() {
   if (state.phase === "final" && final && ending) {
     return (
       <PixelAppShell>
+        {loading ? <PixelLoadingOverlay type={loading} /> : null}
         <PixelHudHeader state={finalState} />
         <PixelFinalResultCard state={finalState} final={final} ending={ending.title} endingText={ending.text} onRestart={restart} />
       </PixelAppShell>
