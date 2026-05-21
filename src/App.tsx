@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   addDerivedTitles,
   applyEffects,
@@ -23,6 +23,7 @@ import {
   PixelEventIcon,
   PixelFinalResultCard,
   PixelHudHeader,
+  PixelLoadingOverlay,
   PixelMenuOverlay,
   PixelPrologue,
   PixelQuickHud,
@@ -36,6 +37,34 @@ import {
 const SAVE_KEY = "uni-rpg-save-v3";
 const TOTAL_RUN_EVENTS = 18;
 const CHECKPOINT_WEEKS = [4, 8, 12, 15];
+
+const SOUND_ASSETS = {
+  click: new URL("../sound/click.mp3", import.meta.url).href,
+  nextlog: new URL("../sound/nextlog.mp3", import.meta.url).href,
+  weekSummary: new URL("../sound/weekSummary.mp3", import.meta.url).href,
+  background: new URL("../sound/background.mp3", import.meta.url).href,
+} as const;
+
+const audioCache = new Map<string, HTMLAudioElement>();
+
+function playSound(src: string) {
+  if (typeof window === "undefined") return;
+
+  let audio = audioCache.get(src);
+  if (!audio) {
+    audio = new Audio(src);
+    audio.preload = "auto";
+    audioCache.set(src, audio);
+  }
+
+  try {
+    audio.currentTime = 0;
+  } catch {
+    // Ignore reset failures on not-yet-ready audio.
+  }
+
+  void audio.play().catch(() => {});
+}
 
 function loadGame() {
   try {
@@ -70,6 +99,58 @@ export default function App() {
   const [department, setDepartment] = useState("");
   const [menu, setMenu] = useState<"status" | "map" | null>(null);
   const [prologueStep, setPrologueStep] = useState(0);
+  const [loading, setLoading] = useState<"start" | "week" | "final" | null>(null);
+  const previousPhase = useRef(state.phase);
+  const backgroundAudio = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!backgroundAudio.current) {
+      backgroundAudio.current = new Audio(SOUND_ASSETS.background);
+      backgroundAudio.current.loop = true;
+      backgroundAudio.current.volume = 0.5;
+      backgroundAudio.current.preload = "auto";
+    }
+
+    if (state.phase !== "start") {
+      if (backgroundAudio.current.paused) {
+        void backgroundAudio.current.play().catch(() => {});
+      }
+    } else {
+      backgroundAudio.current.pause();
+      backgroundAudio.current.currentTime = 0;
+    }
+
+    return () => {
+      if (backgroundAudio.current) {
+        backgroundAudio.current.pause();
+      }
+    };
+  }, [state.phase]);
+
+
+  useEffect(() => {
+    const previous = previousPhase.current;
+    if (previous !== state.phase) {
+      if (state.phase === "event" && previous === "result") {
+        playSound(SOUND_ASSETS.nextlog);
+      }
+      if (state.phase === "weekSummary") {
+        playSound(SOUND_ASSETS.weekSummary);
+      }
+    }
+    previousPhase.current = state.phase;
+  }, [state.phase]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      if (!event.target.closest("button")) return;
+      playSound(SOUND_ASSETS.click);
+    };
+
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, []);
 
   const persist = (next: GameState) => {
     setState(next);
@@ -85,17 +166,25 @@ export default function App() {
       }
     }
 
-    const fresh = structuredClone(initialGameState) as GameState;
-    fresh.playerName = name.trim() || "익명의 대학생";
-    fresh.department = department.trim() || "미정학과";
-    fresh.scheduledRandomEvents = createRandomEventSchedule();
-    fresh.phase = "prologue";
-    setPrologueStep(0);
-    persist(fresh);
+    setLoading("start");
+    setTimeout(() => {
+      const fresh = structuredClone(initialGameState) as GameState;
+      fresh.playerName = name.trim() || "익명의 대학생";
+      fresh.department = department.trim() || "미정학과";
+      fresh.scheduledRandomEvents = createRandomEventSchedule();
+      fresh.phase = "prologue";
+      setPrologueStep(0);
+      persist(fresh);
+      setLoading(null);
+    }, 900);
   };
 
   const startRun = () => {
-    persist(buildWeek({ ...state, phase: "event" }));
+    setLoading("start");
+    setTimeout(() => {
+      persist(buildWeek({ ...state, phase: "event" }));
+      setLoading(null);
+    }, 700);
   };
 
   const nextPrologue = () => {
@@ -166,7 +255,15 @@ export default function App() {
     if (rest[0]) {
       next.phase = "event";
     } else if (state.week === 16) {
-      next.phase = "final";
+      setLoading("final");
+      setTimeout(() => {
+        next.phase = "final";
+        persist(next);
+        // keep the final loading visible briefly so the overlay is shown
+        // during the final screen render, then hide it
+        setTimeout(() => setLoading(null), 600);
+      }, 1500);
+      return;
     } else if (CHECKPOINT_WEEKS.includes(state.week)) {
       next.phase = "weekSummary";
     } else {
@@ -187,15 +284,19 @@ export default function App() {
   };
 
   const nextWeek = () => {
-    const next = buildWeek({
-      ...state,
-      week: state.week + 1,
-      phase: "event",
-      eventQueue: [],
-      currentEvent: undefined,
-      pendingResult: undefined,
-    });
-    persist(next);
+    setLoading("week");
+    setTimeout(() => {
+      const next = buildWeek({
+        ...state,
+        week: state.week + 1,
+        phase: "event",
+        eventQueue: [],
+        currentEvent: undefined,
+        pendingResult: undefined,
+      });
+      persist(next);
+      setLoading(null);
+    }, 1200);
   };
 
   const final = useMemo(() => (state.phase === "final" ? calculateFinalGrades(state) : null), [state]);
@@ -205,6 +306,7 @@ export default function App() {
   if (state.phase === "start") {
     return (
       <PixelAppShell>
+        {loading ? <PixelLoadingOverlay type={loading} /> : null}
         <section className="start-hero">
           <div className="start-panel pixel-panel">
             <img className="start-logo pixel-art" src={pixelAssetMap.logo.title} alt="한 학기만 버텨라" />
@@ -242,6 +344,7 @@ export default function App() {
   if (state.phase === "final" && final && ending) {
     return (
       <PixelAppShell>
+        {loading ? <PixelLoadingOverlay type={loading} /> : null}
         <PixelHudHeader state={finalState} onHome={restart} />
         <PixelFinalResultCard state={finalState} ending={ending.title} endingText={ending.text} onRestart={restart} />
       </PixelAppShell>
@@ -250,6 +353,7 @@ export default function App() {
 
   return (
     <PixelAppShell>
+      {loading ? <PixelLoadingOverlay type={loading} /> : null}
       <PixelHudHeader state={state} onHome={restart} />
       <PixelQuickHud state={state} onOpenStatus={() => setMenu("status")} />
       <PixelRunProgress current={getRunProgress(state)} total={TOTAL_RUN_EVENTS} />

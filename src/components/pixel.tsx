@@ -1,6 +1,6 @@
-import { CSSProperties, ReactNode } from "react";
+import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { pixelAssetMap, PixelAvatar } from "../assets/pixelAssetMap";
-import { Effect, EventOption, GameEvent, GameState } from "../types";
+import { Effect, EventOption, GameEvent, GameState, LoadingType } from "../types";
 
 const statLabels = {
   grade: "학점",
@@ -34,6 +34,57 @@ const statColors = {
 
 export function PixelAppShell({ children }: { children: ReactNode }) {
   return <main className="PixelAppShell">{children}</main>;
+}
+
+export function PixelLoadingOverlay({ type }: { type: LoadingType }) {
+  const messages: Record<LoadingType, string> = {
+    start: "입학 준비...",
+    week: "다음 주 준비...",
+    final: "최종 성적 계산...",
+  };
+  const [percent, setPercent] = useState(0);
+
+  useEffect(() => {
+    if (type === "final") return;
+    let raf = 0;
+    const duration = 1400;
+    let start = performance.now();
+    const tick = (now: number) => {
+      const t = (now - start) % duration;
+      const p = Math.floor((t / duration) * 100);
+      setPercent(p);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [type]);
+
+  return (
+    <div className="PixelLoadingOverlay">
+      <div className="PixelLoadingCard pixel-panel">
+        <div className="loading-container">
+          {type === "final" ? (
+            <div className="pixel-loader-final" aria-hidden>
+              <div className="pixel-block" />
+            </div>
+          ) : (
+            <div className="pixel-loading-legacy">
+              <div className="loading-header">
+                <div className="loading-label">LOADING...</div>
+                <div className="loading-percent">{percent}%</div>
+              </div>
+              <div className="segmented-bar" aria-hidden>
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="segment" style={{ animationDelay: `${i * 70}ms` }} />
+                ))}
+              </div>
+            </div>
+          )}
+          <p className="loading-message">{messages[type]}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function PixelHudHeader({ state, onHome }: { state: GameState; onHome?: () => void }) {
