@@ -6,12 +6,12 @@ import {
   calculateFinalGrades,
   calculateFinalScore,
   calculateMidtermScore,
+  createRandomEventSchedule,
   determineEnding,
   initialGameState,
   mainByWeek,
-  pickClassEvent,
   pickOutcome,
-  pickRandomLifeEvent,
+  scheduledRandomEventForWeek,
 } from "./engine/core";
 import { pixelAssetMap } from "./assets/pixelAssetMap";
 import { Effect, EventOption, GameEvent, GameState, HistoryEntry, Outcome } from "./types";
@@ -24,19 +24,23 @@ import {
   PixelFinalResultCard,
   PixelHudHeader,
   PixelMenuOverlay,
+  PixelPrologue,
   PixelQuickHud,
   PixelResultPanel,
+  PixelRunProgress,
   PixelStatusMenu,
   PixelWeekMap,
   PixelWeekSummary,
 } from "./components/pixel";
 
-const SAVE_KEY = "uni-rpg-save-v2";
+const SAVE_KEY = "uni-rpg-save-v3";
+const TOTAL_RUN_EVENTS = 18;
+const CHECKPOINT_WEEKS = [4, 8, 12, 15];
 
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? (JSON.parse(raw) as GameState) : null;
+    return raw ? normalizeSavedGame(JSON.parse(raw) as Partial<GameState>) : null;
   } catch {
     return null;
   }
@@ -47,11 +51,8 @@ function saveGame(state: GameState) {
 }
 
 function buildWeek(state: GameState) {
-  const queue: GameEvent[] = [];
-  const classEvent = pickClassEvent(state);
-  if (classEvent) queue.push(classEvent);
-  queue.push(mainByWeek(state.week));
-  const randomEvent = pickRandomLifeEvent(state);
+  const queue: GameEvent[] = [mainByWeek(state.week)];
+  const randomEvent = scheduledRandomEventForWeek(state);
   if (randomEvent) queue.push(randomEvent);
 
   return {
@@ -60,14 +61,15 @@ function buildWeek(state: GameState) {
     eventQueue: queue,
     currentEvent: queue[0],
     pendingResult: undefined,
-    recentClassEventIds: classEvent ? [classEvent.id, ...state.recentClassEventIds].slice(0, 2) : state.recentClassEventIds,
   };
 }
 
 export default function App() {
   const [state, setState] = useState<GameState>(() => loadGame() ?? initialGameState);
   const [name, setName] = useState("");
+  const [department, setDepartment] = useState("");
   const [menu, setMenu] = useState<"status" | "map" | null>(null);
+  const [prologueStep, setPrologueStep] = useState(0);
 
   const persist = (next: GameState) => {
     setState(next);
@@ -85,13 +87,31 @@ export default function App() {
 
     const fresh = structuredClone(initialGameState) as GameState;
     fresh.playerName = name.trim() || "익명의 대학생";
-    persist(buildWeek(fresh));
+    fresh.department = department.trim() || "미정학과";
+    fresh.scheduledRandomEvents = createRandomEventSchedule();
+    fresh.phase = "prologue";
+    setPrologueStep(0);
+    persist(fresh);
+  };
+
+  const startRun = () => {
+    persist(buildWeek({ ...state, phase: "event" }));
+  };
+
+  const nextPrologue = () => {
+    if (prologueStep >= 2) {
+      startRun();
+      return;
+    }
+    setPrologueStep((step) => step + 1);
   };
 
   const restart = () => {
     localStorage.removeItem(SAVE_KEY);
     setState(structuredClone(initialGameState) as GameState);
     setName("");
+    setDepartment("");
+    setMenu(null);
   };
 
   const choose = (option: EventOption) => {
@@ -147,8 +167,20 @@ export default function App() {
       next.phase = "event";
     } else if (state.week === 16) {
       next.phase = "final";
-    } else {
+    } else if (CHECKPOINT_WEEKS.includes(state.week)) {
       next.phase = "weekSummary";
+    } else {
+      persist(
+        buildWeek({
+          ...next,
+          week: next.week + 1,
+          phase: "event",
+          eventQueue: [],
+          currentEvent: undefined,
+          pendingResult: undefined,
+        }),
+      );
+      return;
     }
 
     persist(next);
@@ -182,6 +214,10 @@ export default function App() {
               <span className="small-note">플레이어 이름</span>
               <input className="pixel-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="익명의 대학생" />
             </label>
+            <label>
+              <span className="small-note">학과</span>
+              <input className="pixel-input" value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="예: 컴퓨터공학과" />
+            </label>
             <button className="pixel-control pixel-control--primary" type="button" onClick={() => begin(false)}>
               새 학기 시작하기
             </button>
@@ -195,19 +231,28 @@ export default function App() {
     );
   }
 
+  if (state.phase === "prologue") {
+    return (
+      <PixelAppShell>
+        <PixelPrologue playerName={state.playerName} step={prologueStep} onNext={nextPrologue} onSkip={startRun} />
+      </PixelAppShell>
+    );
+  }
+
   if (state.phase === "final" && final && ending) {
     return (
       <PixelAppShell>
-        <PixelHudHeader state={finalState} />
-        <PixelFinalResultCard state={finalState} final={final} ending={ending.title} endingText={ending.text} onRestart={restart} />
+        <PixelHudHeader state={finalState} onHome={restart} />
+        <PixelFinalResultCard state={finalState} ending={ending.title} endingText={ending.text} onRestart={restart} />
       </PixelAppShell>
     );
   }
 
   return (
     <PixelAppShell>
-      <PixelHudHeader state={state} />
-      <PixelQuickHud state={state} onOpenStatus={() => setMenu("status")} onOpenMap={() => setMenu("map")} />
+      <PixelHudHeader state={state} onHome={restart} />
+      <PixelQuickHud state={state} onOpenStatus={() => setMenu("status")} />
+      <PixelRunProgress current={getRunProgress(state)} total={TOTAL_RUN_EVENTS} />
 
       {state.phase === "event" && state.currentEvent ? (
         <section className="game-screen">
@@ -254,6 +299,30 @@ export default function App() {
       ) : null}
     </PixelAppShell>
   );
+}
+
+function getRunProgress(state: GameState) {
+  if (state.phase === "event") return Math.min(TOTAL_RUN_EVENTS, state.history.length + 1);
+  return Math.min(TOTAL_RUN_EVENTS, state.history.length);
+}
+
+function normalizeSavedGame(saved: Partial<GameState>): GameState {
+  return {
+    ...(structuredClone(initialGameState) as GameState),
+    ...saved,
+    playerName: saved.playerName ?? initialGameState.playerName,
+    department: saved.department ?? "미정학과",
+    recentClassEventIds: saved.recentClassEventIds ?? [],
+    scheduledRandomEvents: saved.scheduledRandomEvents?.length ? saved.scheduledRandomEvents : createRandomEventSchedule(),
+    stats: {
+      ...initialGameState.stats,
+      ...saved.stats,
+    },
+    hidden: {
+      ...initialGameState.hidden,
+      ...saved.hidden,
+    },
+  };
 }
 
 function resolveOption(option: EventOption): Outcome & { effects: Effect[] } {

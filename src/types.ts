@@ -77,15 +77,22 @@ export interface HistoryEntry {
   summary: string;
 }
 
+export interface ScheduledRandomEvent {
+  week: number;
+  eventId: string;
+}
+
 export interface GameState {
   playerName: string;
+  department: string;
   week: number;
-  phase: "start" | "event" | "result" | "weekSummary" | "final";
+  phase: "start" | "prologue" | "event" | "result" | "weekSummary" | "final";
   eventQueue: GameEvent[];
   currentEvent?: GameEvent;
   pendingResult?: HistoryEntry;
   history: HistoryEntry[];
   recentClassEventIds: string[];
+  scheduledRandomEvents: ScheduledRandomEvent[];
   titles: string[];
   stats: Record<StatKey, number>;
   hidden: {
@@ -110,9 +117,6 @@ export interface SubjectGrade {
 
 export interface FinalGradeResult {
   academicScore: number;
-  subjects: SubjectGrade[];
-  averageGpa: number;
-  survivalGrade: string;
   survivalScore: number;
 }
 
