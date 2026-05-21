@@ -13,7 +13,6 @@ export type HiddenKey =
   | "teamStability"
   | "selfHolidayGauge"
   | "soloMealTolerance"
-  | "caffeine"
   | "midtermScore"
   | "finalScore";
 
@@ -104,7 +103,6 @@ export interface GameState {
     teamStability: number;
     selfHolidayGauge: number;
     soloMealTolerance: number;
-    caffeine: number;
     midtermScore: number | null;
     finalScore: number | null;
   };
@@ -125,4 +123,5 @@ export interface FinalGradeResult {
 export interface Ending {
   title: string;
   text: string;
+  tone: "normal" | "academic" | "rare" | "survival" | "danger";
 }

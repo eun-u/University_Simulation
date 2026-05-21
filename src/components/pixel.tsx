@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { pixelAssetMap, PixelAvatar } from "../assets/pixelAssetMap";
-import { Effect, EventOption, GameEvent, GameState, LoadingType } from "../types";
+import { Effect, Ending, EventOption, GameEvent, GameState, LoadingType } from "../types";
 
 const statLabels = {
   grade: "학점",
@@ -18,7 +18,6 @@ const hiddenLabels = {
   teamStability: "팀플안정",
   selfHolidayGauge: "자휴",
   soloMealTolerance: "혼밥내성",
-  caffeine: "카페인",
   midtermScore: "중간",
   finalScore: "기말",
 } as const;
@@ -180,8 +179,8 @@ function DangerBadges({ state }: { state: GameState }) {
   if (state.stats.mental <= 20) danger.push("번아웃 경고");
   if (state.stats.stamina <= 20) danger.push("쓰러지기 직전");
   if (state.stats.money <= 5000) danger.push("잔고 위험");
-  if (state.stats.professorAggro >= 70) danger.push("교수님 집중 감시");
-  if (state.hidden.attendance <= 50) danger.push("출석 위험");
+  if (state.stats.professorAggro >= 30) danger.push("교수님 집중 감시");
+  if (state.week >= 6 && state.hidden.attendance <= 20) danger.push("출석 위험");
   if (state.hidden.teamStability <= 30) danger.push("팀플 붕괴 위험");
   if (danger.length === 0) return null;
 
@@ -300,13 +299,7 @@ export function PixelEventScene({ event, week }: { event: GameEvent; week: numbe
   const banner = getBanner(week, event);
   return (
     <section className="PixelEventScene pixel-panel">
-      <div className="scene-banner">
-        {banner ? <img className="scene-banner-image pixel-art" src={banner} alt="" /> : null}
-        <div>
-          <div className="scene-kicker">{event.type.toUpperCase()} LOG</div>
-          <h1 className="scene-title">{event.title}</h1>
-        </div>
-      </div>
+      <div className="scene-banner">{banner ? <img className="scene-banner-image pixel-art" src={banner} alt={event.title} /> : null}</div>
       <div className="scene-meta">WEEK {week} / {event.weekName ?? "캠퍼스 생존 로그"}</div>
     </section>
   );
@@ -406,7 +399,6 @@ export function PixelWeekSummary({
   state,
   onNextWeek,
   onOpenStatus,
-  onOpenMap,
 }: {
   state: GameState;
   onNextWeek: () => void;
@@ -427,9 +419,6 @@ export function PixelWeekSummary({
       <div className="summary-actions">
         <button className="pixel-control" type="button" onClick={onOpenStatus}>
           STATUS
-        </button>
-        <button className="pixel-control" type="button" onClick={onOpenMap}>
-          WEEK
         </button>
       </div>
       {titles.length > 0 ? (
@@ -554,31 +543,63 @@ export function PixelBadge({ children, tone = "normal" }: { children: ReactNode;
 export function PixelFinalResultCard({
   state,
   ending,
-  endingText,
+  onRestart,
 }: {
   state: GameState;
-  ending: string;
-  endingText: string;
+  ending: Ending;
+  onRestart: () => void;
 }) {
   const titles = state.titles.length > 0 ? state.titles.slice(-3) : ["칭호 없이도 생존한 자"];
   return (
     <section className="PixelFinalResultCard pixel-panel">
-      <div className="panel-label">FINAL RESULT</div>
-      <h1 className="pixel-title">최종 STATUS</h1>
-      <PixelStatusMenu state={state} />
-      <div className="badge-grid">
+      <div className={`ending-hero ending-hero--${ending.tone}`}>
+        <img className="ending-hero__badge pixel-art" src={pixelAssetMap.badge[ending.tone]} alt="" />
+        <div>
+          <div className="panel-label">ENDING</div>
+          <h1 className="pixel-title">{ending.title}</h1>
+          <p className="ending-text">{ending.text}</p>
+        </div>
+      </div>
+      <button className="pixel-control pixel-control--primary" type="button" onClick={onRestart}>
+        ↻ 다시 하기
+      </button>
+      <div className="panel-label">FINAL STATUS</div>
+      <FinalStatusCompact state={state} />
+      <div className="badge-grid final-badge-grid">
         {titles.map((title) => (
           <PixelBadge key={title} tone="survival">
             {title}
           </PixelBadge>
         ))}
       </div>
-      <div className="ending-banner">
-        <span>ENDING</span>
-        <strong>{ending}</strong>
-      </div>
-      <p className="ending-text">{endingText}</p>
     </section>
+  );
+}
+
+function FinalStatusCompact({ state }: { state: GameState }) {
+  const stats = [
+    { key: "mental", label: "멘탈", value: Math.round(state.stats.mental), icon: pixelAssetMap.statIcon.mental },
+    { key: "grade", label: "학점", value: Math.round(state.stats.grade), icon: pixelAssetMap.statIcon.grade },
+    { key: "stamina", label: "체력", value: Math.round(state.stats.stamina), icon: pixelAssetMap.statIcon.stamina },
+    { key: "money", label: "지갑", value: compactMoney(state.stats.money), icon: pixelAssetMap.statIcon.money },
+    { key: "social", label: "관계", value: Math.round(state.stats.social), icon: pixelAssetMap.statIcon.social },
+    { key: "professorAggro", label: "어그로", value: Math.round(state.stats.professorAggro), icon: pixelAssetMap.statIcon.professorAggro },
+  ];
+
+  return (
+    <div className="final-status-compact">
+      {stats.map((stat) => (
+        <div className="final-stat-tile" key={stat.key}>
+          <img className="pixel-art" src={stat.icon} alt="" />
+          <span>{stat.label}</span>
+          <strong>{stat.value}</strong>
+        </div>
+      ))}
+      <HiddenStat label="출석" value={state.hidden.attendance} />
+      <HiddenStat label="과제" value={state.hidden.assignment} />
+      <HiddenStat label="중간" value={state.hidden.midtermScore ?? "-"} />
+      <HiddenStat label="기말" value={state.hidden.finalScore ?? "-"} />
+    </div>
   );
 }
 
@@ -624,7 +645,7 @@ function getEventIcon(event: GameEvent) {
   if (title.includes("팀플")) return pixelAssetMap.eventIcon.teamProject;
   if (title.includes("통학")) return pixelAssetMap.eventIcon.commute;
   if (title.includes("학식")) return pixelAssetMap.eventIcon.cafeteria;
-  if (title.includes("카페인") || title.includes("졸음")) return pixelAssetMap.eventIcon.caffeine;
+  if (title.includes("졸음")) return pixelAssetMap.eventIcon.lateWakeup;
   if (title.includes("개총") || title.includes("술")) return pixelAssetMap.eventIcon.drinking;
   if (event.avatar && event.avatar in pixelAssetMap.avatar) return pixelAssetMap.avatar[event.avatar];
   return pixelAssetMap.avatar.system;

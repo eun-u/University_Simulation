@@ -7,6 +7,7 @@ export const randomEvents: GameEvent[] = [
     title: "혼밥 이벤트",
     time: "점심시간",
     avatar: "system",
+    assetKey: "randomSoloMeal",
     intro: ["친구들이 모두 수업이 다르다.", "학식당에 혼자 들어섰다.", "빈자리는 많지만 마음의 자리는 없다."],
     options: [
       {
@@ -70,6 +71,7 @@ export const randomEvents: GameEvent[] = [
     title: "학식 룰렛",
     time: "점심시간",
     avatar: "friend",
+    assetKey: "randomCafeteria",
     intro: ["오늘의 학식 메뉴는 이름만 봐서는 정체를 알 수 없다.", "하지만 줄은 이미 길다."],
     options: [
       {
@@ -133,6 +135,7 @@ export const randomEvents: GameEvent[] = [
     title: "갑작스러운 술 약속",
     time: "저녁",
     avatar: "friend",
+    assetKey: "randomDrinking",
     intro: ["동기가 말했다.", "“오늘 가볍게 한잔?”", "대학생활에서 가볍다는 말은 대체로 무겁다."],
     options: [
       {
@@ -200,6 +203,7 @@ export const randomEvents: GameEvent[] = [
     title: "통학 지옥",
     time: "아침",
     avatar: "system",
+    assetKey: "randomCommute",
     intro: ["버스가 오지 않는다.", "지하철은 이미 사람으로 가득하다.", "당신은 등교가 아니라 던전에 입장하고 있다."],
     options: [
       {
@@ -250,6 +254,7 @@ export const randomEvents: GameEvent[] = [
     title: "LMS 알림 폭격",
     time: "LMS",
     avatar: "lms",
+    assetKey: "randomLms",
     intro: ["새 공지가 등록되었습니다.", "새 과제가 등록되었습니다.", "새 자료가 등록되었습니다.", "새 공지가 수정되었습니다.", "당신의 심장이 먼저 반응했다."],
     options: [
       {
@@ -300,6 +305,7 @@ export const randomEvents: GameEvent[] = [
     title: "팀플 잠수 조원",
     time: "오후 11:38",
     avatar: "teammate",
+    assetKey: "randomTeamSilent",
     condition: { minWeek: 4 },
     intro: ["발표 준비 단톡방.", "한 조원이 아직도 메시지를 읽지 않았다.", "그의 마지막 접속은 어제다."],
     options: [
@@ -377,6 +383,7 @@ export const randomEvents: GameEvent[] = [
     title: "교재비 위기",
     time: "서점",
     avatar: "system",
+    assetKey: "randomBalance",
     intro: ["교수님이 지정한 교재를 찾았다.", "가격표를 본 순간,", "당신은 전공을 다시 생각했다."],
     options: [
       {
@@ -447,63 +454,12 @@ export const randomEvents: GameEvent[] = [
     ],
   },
   {
-    id: "random-caffeine",
-    type: "random",
-    title: "카페인 부작용",
-    time: "새벽",
-    avatar: "system",
-    condition: { minHidden: { caffeine: 60 } },
-    intro: ["커피는 당신을 살렸다.", "그리고 잠도 함께 가져갔다."],
-    options: [
-      {
-        id: "more",
-        label: "더 마신다",
-        resultText: "더 마셨다.\n심장은 조별과제 단톡방보다 빠르게 울렸다.",
-        effects: [
-          { target: "stamina", value: 8 },
-          { target: "grade", value: 3 },
-          { target: "caffeine", value: 15 },
-          { target: "mental", value: -8 },
-        ],
-      },
-      {
-        id: "water",
-        label: "물을 마신다",
-        resultText: "물을 마셨다.\n몸이 드디어 정상적인 선택을 받았다.",
-        effects: [
-          { target: "caffeine", value: -10 },
-          { target: "stamina", value: 2 },
-          { target: "mental", value: 3 },
-        ],
-      },
-      {
-        id: "endure",
-        label: "그냥 버틴다",
-        resultText: "그냥 버텼다.\n이것도 공부인지 지구력 테스트인지 모르겠다.",
-        effects: [
-          { target: "stamina", value: -5 },
-          { target: "mental", value: -5 },
-          { target: "grade", value: 2 },
-        ],
-      },
-      {
-        id: "reflect",
-        label: "누워서 반성한다",
-        resultText: "누워서 반성했다.\n반성은 했지만 알람은 맞추지 않았다.",
-        effects: [
-          { target: "stamina", value: 10 },
-          { target: "grade", value: -5 },
-          { target: "mental", value: 5 },
-        ],
-      },
-    ],
-  },
-  {
     id: "random-self-holiday",
     type: "random",
     title: "자휴 유혹 재발",
     time: "오전",
     avatar: "system",
+    assetKey: "randomSelfHolidayRelapse",
     condition: { minHidden: { selfHolidayGauge: 50 } },
     intro: ["몸이 먼저 알고 있다.", "오늘 수업은 멀고 침대는 가깝다."],
     options: [
