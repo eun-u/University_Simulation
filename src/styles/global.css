@@ -413,7 +413,8 @@ img {
 
 .PixelChatWindow {
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: 12px;
@@ -891,5 +892,68 @@ img {
   * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Loading System */
+.PixelLoadingOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 3, 13, 0.88);
+  font-family: var(--font-pixel);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-progress {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--px-panel-700);
+  border-top-color: var(--px-mint);
+  border-right-color: var(--px-mint);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-pulse {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--px-gold);
+  border-radius: 2px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.loading-message {
+  margin: 0;
+  color: var(--px-text-main);
+  font-size: 14px;
+  text-align: center;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
   }
 }

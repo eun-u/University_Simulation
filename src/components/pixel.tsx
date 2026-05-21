@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode } from "react";
 import { pixelAssetMap, PixelAvatar } from "../assets/pixelAssetMap";
-import { Effect, EventOption, FinalGradeResult, GameEvent, GameState } from "../types";
+import { Effect, EventOption, FinalGradeResult, GameEvent, GameState, LoadingType } from "../types";
 
 const statLabels = {
   grade: "학점",
@@ -34,6 +34,23 @@ const statColors = {
 
 export function PixelAppShell({ children }: { children: ReactNode }) {
   return <main className="PixelAppShell">{children}</main>;
+}
+
+export function PixelLoadingOverlay({ type }: { type: LoadingType }) {
+  const messages: Record<LoadingType, string> = {
+    start: "입학 준비...",
+    week: "다음 주 준비...",
+    final: "최종 성적 계산...",
+  };
+
+  return (
+    <div className="PixelLoadingOverlay">
+      <div className="loading-container">
+        <div className={type === "final" ? "loading-pulse" : "loading-progress"} />
+        <p className="loading-message">{messages[type]}</p>
+      </div>
+    </div>
+  );
 }
 
 export function PixelHudHeader({ state }: { state: GameState }) {

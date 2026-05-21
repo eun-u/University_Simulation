@@ -23,6 +23,7 @@ import {
   PixelEventIcon,
   PixelFinalResultCard,
   PixelHudHeader,
+  PixelLoadingOverlay,
   PixelMenuOverlay,
   PixelQuickHud,
   PixelResultPanel,
@@ -65,9 +66,10 @@ function buildWeek(state: GameState) {
 }
 
 export default function App() {
-  const [state, setState] = useState<GameState>(() => loadGame() ?? initialGameState);
+  const [state, setState] = useState<GameState>(() => structuredClone(initialGameState));
   const [name, setName] = useState("");
   const [menu, setMenu] = useState<"status" | "map" | null>(null);
+  const [loading, setLoading] = useState<"start" | "week" | "final" | null>(null);
 
   const persist = (next: GameState) => {
     setState(next);
@@ -83,9 +85,13 @@ export default function App() {
       }
     }
 
-    const fresh = structuredClone(initialGameState) as GameState;
-    fresh.playerName = name.trim() || "익명의 대학생";
-    persist(buildWeek(fresh));
+    setLoading("start");
+    setTimeout(() => {
+      const fresh = structuredClone(initialGameState) as GameState;
+      fresh.playerName = name.trim() || "익명의 대학생";
+      persist(buildWeek(fresh));
+      setLoading(null);
+    }, 1200);
   };
 
   const restart = () => {
@@ -146,7 +152,13 @@ export default function App() {
     if (rest[0]) {
       next.phase = "event";
     } else if (state.week === 16) {
-      next.phase = "final";
+      setLoading("final");
+      setTimeout(() => {
+        next.phase = "final";
+        persist(next);
+        setLoading(null);
+      }, 1500);
+      return;
     } else {
       next.phase = "weekSummary";
     }
@@ -155,15 +167,19 @@ export default function App() {
   };
 
   const nextWeek = () => {
-    const next = buildWeek({
-      ...state,
-      week: state.week + 1,
-      phase: "event",
-      eventQueue: [],
-      currentEvent: undefined,
-      pendingResult: undefined,
-    });
-    persist(next);
+    setLoading("week");
+    setTimeout(() => {
+      const next = buildWeek({
+        ...state,
+        week: state.week + 1,
+        phase: "event",
+        eventQueue: [],
+        currentEvent: undefined,
+        pendingResult: undefined,
+      });
+      persist(next);
+      setLoading(null);
+    }, 1200);
   };
 
   const final = useMemo(() => (state.phase === "final" ? calculateFinalGrades(state) : null), [state]);
@@ -173,6 +189,7 @@ export default function App() {
   if (state.phase === "start") {
     return (
       <PixelAppShell>
+        {loading ? <PixelLoadingOverlay type={loading} /> : null}
         <section className="start-hero">
           <div className="start-panel pixel-panel">
             <img className="start-logo pixel-art" src={pixelAssetMap.logo.title} alt="한 학기만 버텨라" />
@@ -206,6 +223,7 @@ export default function App() {
 
   return (
     <PixelAppShell>
+      {loading ? <PixelLoadingOverlay type={loading} /> : null}
       <PixelHudHeader state={state} />
       <PixelQuickHud state={state} onOpenStatus={() => setMenu("status")} onOpenMap={() => setMenu("map")} />
 

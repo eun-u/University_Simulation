@@ -2,6 +2,8 @@ import { PixelAvatar } from "./assets/pixelAssetMap";
 
 export type EventType = "class" | "main" | "random" | "exam" | "ending";
 
+export type LoadingType = "start" | "week" | "final";
+
 export type StatKey = "grade" | "mental" | "stamina" | "money" | "social" | "professorAggro";
 
 export type HiddenKey =
