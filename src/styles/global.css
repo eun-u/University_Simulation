@@ -413,8 +413,7 @@ img {
 
 .PixelChatWindow {
   min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   display: grid;
   align-content: start;
   gap: 12px;
