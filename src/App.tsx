@@ -29,12 +29,14 @@ import {
   PixelQuickHud,
   PixelResultPanel,
   PixelRunProgress,
+  PixelSettingsMenu,
   PixelStatusMenu,
   PixelWeekMap,
   PixelWeekSummary,
 } from "./components/pixel";
 
 const SAVE_KEY = "uni-rpg-save-v3";
+const AUDIO_SETTINGS_KEY = "uni-rpg-audio-settings-v1";
 const TOTAL_RUN_EVENTS = 18;
 const CHECKPOINT_WEEKS = [4, 8, 12, 15];
 
@@ -46,9 +48,34 @@ const SOUND_ASSETS = {
 } as const;
 
 const audioCache = new Map<string, HTMLAudioElement>();
+const soundGate = new Map<string, number>();
 
-function playSound(src: string) {
+interface AudioSettings {
+  bgmVolume: number;
+  sfxVolume: number;
+}
+
+function loadAudioSettings(): AudioSettings {
+  try {
+    const raw = localStorage.getItem(AUDIO_SETTINGS_KEY);
+    return raw ? { ...DEFAULT_AUDIO_SETTINGS, ...JSON.parse(raw) } : DEFAULT_AUDIO_SETTINGS;
+  } catch {
+    return DEFAULT_AUDIO_SETTINGS;
+  }
+}
+
+function saveAudioSettings(settings: AudioSettings) {
+  localStorage.setItem(AUDIO_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function playSound(src: string, volume: number) {
   if (typeof window === "undefined") return;
+  if (volume <= 0) return;
+
+  const now = Date.now();
+  const previous = soundGate.get(src) ?? 0;
+  if (now - previous < 70) return;
+  soundGate.set(src, now);
 
   let audio = audioCache.get(src);
   if (!audio) {
@@ -58,6 +85,8 @@ function playSound(src: string) {
   }
 
   try {
+    audio.pause();
+    audio.volume = volume;
     audio.currentTime = 0;
   } catch {
     // Ignore reset failures on not-yet-ready audio.
@@ -65,6 +94,11 @@ function playSound(src: string) {
 
   void audio.play().catch(() => {});
 }
+
+const DEFAULT_AUDIO_SETTINGS: AudioSettings = {
+  bgmVolume: 0.45,
+  sfxVolume: 0.65,
+};
 
 function loadGame() {
   try {
@@ -97,9 +131,10 @@ export default function App() {
   const [state, setState] = useState<GameState>(() => loadGame() ?? initialGameState);
   const [name, setName] = useState("");
   const [department, setDepartment] = useState("");
-  const [menu, setMenu] = useState<"status" | "map" | null>(null);
+  const [menu, setMenu] = useState<"status" | "map" | "settings" | null>(null);
   const [prologueStep, setPrologueStep] = useState(0);
   const [loading, setLoading] = useState<"start" | "week" | "final" | null>(null);
+  const [audioSettings, setAudioSettings] = useState<AudioSettings>(() => loadAudioSettings());
   const previousPhase = useRef(state.phase);
   const backgroundAudio = useRef<HTMLAudioElement | null>(null);
 
@@ -107,17 +142,14 @@ export default function App() {
     if (!backgroundAudio.current) {
       backgroundAudio.current = new Audio(SOUND_ASSETS.background);
       backgroundAudio.current.loop = true;
-      backgroundAudio.current.volume = 0.5;
       backgroundAudio.current.preload = "auto";
     }
 
-    if (state.phase !== "start") {
-      if (backgroundAudio.current.paused) {
-        void backgroundAudio.current.play().catch(() => {});
-      }
-    } else {
+    backgroundAudio.current.volume = audioSettings.bgmVolume;
+    if (audioSettings.bgmVolume <= 0) {
       backgroundAudio.current.pause();
-      backgroundAudio.current.currentTime = 0;
+    } else if (backgroundAudio.current.paused) {
+      void backgroundAudio.current.play().catch(() => {});
     }
 
     return () => {
@@ -125,32 +157,39 @@ export default function App() {
         backgroundAudio.current.pause();
       }
     };
-  }, [state.phase]);
+  }, [audioSettings.bgmVolume]);
+
+  useEffect(() => {
+    saveAudioSettings(audioSettings);
+  }, [audioSettings]);
 
 
   useEffect(() => {
     const previous = previousPhase.current;
     if (previous !== state.phase) {
       if (state.phase === "event" && previous === "result") {
-        playSound(SOUND_ASSETS.nextlog);
+        playSound(SOUND_ASSETS.nextlog, audioSettings.sfxVolume);
       }
       if (state.phase === "weekSummary") {
-        playSound(SOUND_ASSETS.weekSummary);
+        playSound(SOUND_ASSETS.weekSummary, audioSettings.sfxVolume);
       }
     }
     previousPhase.current = state.phase;
-  }, [state.phase]);
+  }, [audioSettings.sfxVolume, state.phase]);
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       if (!(event.target instanceof Element)) return;
       if (!event.target.closest("button")) return;
-      playSound(SOUND_ASSETS.click);
+      if (backgroundAudio.current && backgroundAudio.current.paused && audioSettings.bgmVolume > 0) {
+        void backgroundAudio.current.play().catch(() => {});
+      }
+      playSound(SOUND_ASSETS.click, audioSettings.sfxVolume);
     };
 
     document.addEventListener("click", handleClick, true);
     return () => document.removeEventListener("click", handleClick, true);
-  }, []);
+  }, [audioSettings.bgmVolume, audioSettings.sfxVolume]);
 
   const persist = (next: GameState) => {
     setState(next);
@@ -201,6 +240,10 @@ export default function App() {
     setName("");
     setDepartment("");
     setMenu(null);
+  };
+
+  const updateAudioSettings = (next: Partial<AudioSettings>) => {
+    setAudioSettings((current) => ({ ...current, ...next }));
   };
 
   const choose = (option: EventOption) => {
@@ -345,8 +388,19 @@ export default function App() {
     return (
       <PixelAppShell>
         {loading ? <PixelLoadingOverlay type={loading} /> : null}
-        <PixelHudHeader state={finalState} onHome={restart} />
-        <PixelFinalResultCard state={finalState} ending={ending.title} endingText={ending.text} onRestart={restart} />
+        <PixelHudHeader state={finalState} onOpenSettings={() => setMenu("settings")} />
+        <PixelFinalResultCard state={finalState} ending={ending.title} endingText={ending.text} />
+        {menu === "settings" ? (
+          <PixelMenuOverlay title="SETTINGS" onClose={() => setMenu(null)}>
+            <PixelSettingsMenu
+              bgmVolume={audioSettings.bgmVolume}
+              sfxVolume={audioSettings.sfxVolume}
+              onBgmVolumeChange={(value) => updateAudioSettings({ bgmVolume: value })}
+              onSfxVolumeChange={(value) => updateAudioSettings({ sfxVolume: value })}
+              onRestart={restart}
+            />
+          </PixelMenuOverlay>
+        ) : null}
       </PixelAppShell>
     );
   }
@@ -354,7 +408,7 @@ export default function App() {
   return (
     <PixelAppShell>
       {loading ? <PixelLoadingOverlay type={loading} /> : null}
-      <PixelHudHeader state={state} onHome={restart} />
+      <PixelHudHeader state={state} onOpenSettings={() => setMenu("settings")} />
       <PixelQuickHud state={state} onOpenStatus={() => setMenu("status")} />
       <PixelRunProgress current={getRunProgress(state)} total={TOTAL_RUN_EVENTS} />
 
@@ -399,6 +453,18 @@ export default function App() {
       {menu === "map" ? (
         <PixelMenuOverlay title="WEEK" onClose={() => setMenu(null)}>
           <PixelWeekMap week={state.week} />
+        </PixelMenuOverlay>
+      ) : null}
+
+      {menu === "settings" ? (
+        <PixelMenuOverlay title="SETTINGS" onClose={() => setMenu(null)}>
+          <PixelSettingsMenu
+            bgmVolume={audioSettings.bgmVolume}
+            sfxVolume={audioSettings.sfxVolume}
+            onBgmVolumeChange={(value) => updateAudioSettings({ bgmVolume: value })}
+            onSfxVolumeChange={(value) => updateAudioSettings({ sfxVolume: value })}
+            onRestart={restart}
+          />
         </PixelMenuOverlay>
       ) : null}
     </PixelAppShell>

@@ -224,6 +224,10 @@ img {
 }
 
 .hud-chip {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 8px;
   color: var(--px-text-dark);
   background: var(--px-gold);
@@ -232,9 +236,9 @@ img {
   white-space: nowrap;
 }
 
-.hud-home-button {
+.hud-settings-button {
   width: 34px;
-  min-height: 34px;
+  height: 34px;
   padding: 0;
   color: var(--px-text-main);
   background: var(--px-coral);
@@ -246,7 +250,7 @@ img {
   line-height: 1;
 }
 
-.hud-home-button:focus-visible {
+.hud-settings-button:focus-visible {
   outline: 4px solid var(--px-gold);
   outline-offset: 3px;
 }
@@ -877,6 +881,11 @@ img {
   background: var(--px-gold);
 }
 
+.pixel-control--danger {
+  color: var(--px-text-main);
+  background: var(--px-coral);
+}
+
 .pixel-control:hover {
   transform: translate(-2px, -2px);
   box-shadow:
@@ -954,6 +963,39 @@ img {
 .status-menu {
   display: grid;
   gap: 12px;
+}
+
+.settings-menu {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  padding: 10px;
+  background: var(--px-bg-800);
+  border: 3px solid var(--px-line-black);
+  box-shadow: 3px 3px 0 var(--px-line-black);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+}
+
+.settings-row span {
+  color: var(--px-text-sub);
+}
+
+.settings-row strong {
+  color: var(--px-gold);
+  text-align: right;
+}
+
+.pixel-range {
+  width: 100%;
+  accent-color: var(--px-mint);
 }
 
 .status-menu .PixelStatHud,

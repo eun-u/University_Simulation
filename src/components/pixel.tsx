@@ -87,7 +87,7 @@ export function PixelLoadingOverlay({ type }: { type: LoadingType }) {
   );
 }
 
-export function PixelHudHeader({ state, onHome }: { state: GameState; onHome?: () => void }) {
+export function PixelHudHeader({ state, onOpenSettings }: { state: GameState; onOpenSettings?: () => void }) {
   return (
     <header className="PixelHudHeader">
       <div className="hud-player">
@@ -99,9 +99,9 @@ export function PixelHudHeader({ state, onHome }: { state: GameState; onHome?: (
       </div>
       <div className="hud-actions">
         <div className="hud-chip">WEEK {String(state.week).padStart(2, "0")}</div>
-        {onHome ? (
-          <button className="hud-home-button" type="button" onClick={onHome} aria-label="초기 화면으로 돌아가기">
-            ↻
+        {onOpenSettings ? (
+          <button className="hud-settings-button" type="button" onClick={onOpenSettings} aria-label="설정 열기">
+            ⚙
           </button>
         ) : null}
       </div>
@@ -470,6 +470,54 @@ export function PixelMenuOverlay({
   );
 }
 
+export function PixelSettingsMenu({
+  bgmVolume,
+  sfxVolume,
+  onBgmVolumeChange,
+  onSfxVolumeChange,
+  onRestart,
+}: {
+  bgmVolume: number;
+  sfxVolume: number;
+  onBgmVolumeChange: (value: number) => void;
+  onSfxVolumeChange: (value: number) => void;
+  onRestart: () => void;
+}) {
+  return (
+    <div className="settings-menu">
+      <label className="settings-row">
+        <span>BGM</span>
+        <input
+          className="pixel-range"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={bgmVolume}
+          onChange={(event) => onBgmVolumeChange(Number(event.target.value))}
+        />
+        <strong>{Math.round(bgmVolume * 100)}</strong>
+      </label>
+      <label className="settings-row">
+        <span>SFX</span>
+        <input
+          className="pixel-range"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={sfxVolume}
+          onChange={(event) => onSfxVolumeChange(Number(event.target.value))}
+        />
+        <strong>{Math.round(sfxVolume * 100)}</strong>
+      </label>
+      <button className="pixel-control pixel-control--danger" type="button" onClick={onRestart}>
+        ↻ 다시 하기
+      </button>
+    </div>
+  );
+}
+
 export function PixelStatusMenu({ state }: { state: GameState }) {
   return (
     <div className="status-menu">
@@ -507,12 +555,10 @@ export function PixelFinalResultCard({
   state,
   ending,
   endingText,
-  onRestart,
 }: {
   state: GameState;
   ending: string;
   endingText: string;
-  onRestart: () => void;
 }) {
   const titles = state.titles.length > 0 ? state.titles.slice(-3) : ["칭호 없이도 생존한 자"];
   return (
@@ -532,9 +578,6 @@ export function PixelFinalResultCard({
         <strong>{ending}</strong>
       </div>
       <p className="ending-text">{endingText}</p>
-      <button className="pixel-control pixel-control--primary" type="button" onClick={onRestart}>
-        다시 하기
-      </button>
     </section>
   );
 }
