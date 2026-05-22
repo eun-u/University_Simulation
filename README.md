@@ -3,6 +3,7 @@
 > 개강부터 성적 확인까지, 학점과 멘탈을 들고 16주를 버티는 대학생 생존 RPG
 
 ![title logo](public/university-survival/png/title_logo.png)
+배포 주소 : https://university-simulation-1.onrender.com/
 
 ## 프로젝트 소개
 
