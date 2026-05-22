@@ -1,4 +1,5 @@
-const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
+const asset = (path: string) =>
+  `${import.meta.env.BASE_URL.replace(/\/?$/, "/")}${path.replace(/^\//, "")}`;
 
 export const pixelAssetMap = {
   logo: {
